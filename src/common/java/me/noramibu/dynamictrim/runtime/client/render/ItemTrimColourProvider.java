@@ -7,15 +7,16 @@ import me.noramibu.dynamictrim.runtime.client.palette.TrimPalette;
 import me.noramibu.dynamictrim.runtime.client.palette.TrimPalettes;
 import java.util.Map;
 import net.minecraft.client.color.item.ItemColor;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.IdMapper;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.AnimalArmorItem;
-import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.armortrim.ArmorTrim;
-import net.minecraft.world.item.armortrim.TrimMaterial;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
+import net.minecraft.world.item.equipment.trim.TrimMaterial;
 
 
 public final class ItemTrimColourProvider implements ItemColor {
@@ -67,11 +68,11 @@ public final class ItemTrimColourProvider implements ItemColor {
 
     public Item[] getApplicableItems() {
         return BuiltInRegistries.ITEM.stream().filter(item -> {
-            if(item instanceof Equipable equipment) {
-                if(item instanceof AnimalArmorItem) return false;
-                return equipment.getEquipmentSlot().isArmor();
-            }
-            return false;
+            Equippable equipment = item.components().get(DataComponents.EQUIPPABLE);
+            return equipment != null
+                    && !(item instanceof AnimalArmorItem)
+                    && item != Items.ELYTRA
+                    && equipment.slot().isArmor();
         }).toArray(Item[]::new);
     }
 }

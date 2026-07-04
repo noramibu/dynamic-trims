@@ -18,7 +18,7 @@ import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.Direction;
-import net.minecraft.util.FastColor;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -44,7 +44,7 @@ public final class TrimPaletteGenerator {
 
         List<Integer> vibrantPalette = generateVibrantPalette(colours);
         if(vibrantPalette.isEmpty()) {
-            RuntimeTrims.LOGGER.warn("Could not generate palette for {}", item.getDescription().getString());
+            RuntimeTrims.LOGGER.warn("Could not generate palette for {}", item.getName().getString());
             return TrimPalette.DEFAULT;
         }
 
@@ -162,15 +162,15 @@ public final class TrimPaletteGenerator {
 
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                int colour = spriteImage.getPixelRGBA(x, y);
-                int alpha = FastColor.ABGR32.alpha(colour);
+                int colour = spriteImage.getPixel(x, y);
+                int alpha = ARGB.alpha(colour);
                 if (alpha == 0) {
                     continue;
                 }
 
-                int red = FastColor.ABGR32.red(colour);
-                int green = FastColor.ABGR32.green(colour);
-                int blue = FastColor.ABGR32.blue(colour);
+                int red = ARGB.red(colour);
+                int green = ARGB.green(colour);
+                int blue = ARGB.blue(colour);
                 int packed = red << 16 | green << 8 | blue;
                 colourData[x + y * width] = packed;
             }

@@ -17,13 +17,12 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.armortrim.ArmorTrim;
-import net.minecraft.world.item.armortrim.TrimMaterial;
+import net.minecraft.world.item.equipment.EquipmentModel;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
+import net.minecraft.world.item.equipment.trim.TrimMaterial;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +31,10 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
 
     public void setContext(Entity entity, Item trimmed) {
         context = new RenderContext(entity, trimmed);
+    }
+
+    public void setContext(Item trimmed) {
+        context = new RenderContext(null, trimmed);
     }
 
     public RenderContext getContext() {
@@ -89,9 +92,9 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
      * Handles overriding automatically
      * @see #renderTrim(ArmorTrim, TextureAtlasSprite, PoseStack, MultiBufferSource, int, int, int, ResourceLocation, TextureAtlas, RenderType, RenderCallback)
      */
-    public void renderTrim(ArmorTrim trim, Holder<ArmorMaterial> armourMaterial, boolean leggings, TextureAtlasSprite sprite, PoseStack matrixStack, MultiBufferSource vertexConsumers, int light, int overlay, int colour, TextureAtlas atlasTexture, RenderCallback callback) {
+    public void renderTrim(ArmorTrim trim, EquipmentModel.LayerType layerType, ResourceLocation equipmentModelId, TextureAtlasSprite sprite, PoseStack matrixStack, MultiBufferSource vertexConsumers, int light, int overlay, int colour, TextureAtlas atlasTexture, RenderCallback callback) {
         if (RuntimeTrimsClient.overrideExisting) {
-            renderTrim(trim, sprite, matrixStack, vertexConsumers, light, overlay, colour, getOverridenId(trim, armourMaterial, leggings), atlasTexture, callback);
+            renderTrim(trim, sprite, matrixStack, vertexConsumers, light, overlay, colour, getOverridenId(trim, layerType, equipmentModelId), atlasTexture, callback);
         } else {
             renderTrim(trim, sprite, matrixStack, vertexConsumers, light, overlay, colour, atlasTexture, callback);
         }
@@ -182,12 +185,12 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         return assetName;
     }
 
-    public ResourceLocation getOverridenId(ArmorTrim trim, Holder<ArmorMaterial> armourMaterial, boolean leggings) {
-        ResourceLocation modelId = getModelId(trim, armourMaterial, leggings);
+    public ResourceLocation getOverridenId(ArmorTrim trim, EquipmentModel.LayerType layerType, ResourceLocation equipmentModelId) {
+        ResourceLocation modelId = getModelId(trim, layerType, equipmentModelId);
         modelId = modelId.withPath(path -> {
             TrimMaterial trimMaterial = trim.material().value();
-            Map<Holder<ArmorMaterial>, String> overrides = trimMaterial.overrideArmorMaterials();
-            String assetId = overrides.getOrDefault(armourMaterial, trimMaterial.assetName());
+            Map<ResourceLocation, String> overrides = trimMaterial.overrideArmorMaterials();
+            String assetId = overrides.getOrDefault(equipmentModelId, trimMaterial.assetName());
             return path.replace(assetId, RuntimeTrims.DYNAMIC);
         });
         return modelId;
@@ -197,8 +200,8 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         return sprite.contents().name();
     }
 
-    public ResourceLocation getModelId(ArmorTrim trim, Holder<ArmorMaterial> armourMaterial, boolean leggings) {
-        return leggings ? trim.innerTexture(armourMaterial) : trim.outerTexture(armourMaterial);
+    public ResourceLocation getModelId(ArmorTrim trim, EquipmentModel.LayerType layerType, ResourceLocation equipmentModelId) {
+        return trim.getTexture(layerType, equipmentModelId);
     }
 
     public interface RenderCallback {

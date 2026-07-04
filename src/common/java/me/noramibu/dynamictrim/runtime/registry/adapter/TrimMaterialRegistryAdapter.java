@@ -5,7 +5,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.MappedRegistry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.armortrim.TrimMaterial;
+import net.minecraft.world.item.equipment.trim.TrimMaterial;
 
 public abstract class TrimMaterialRegistryAdapter {
     public abstract Map<ResourceLocation, Holder<Item>> getNewMaterials(MappedRegistry<TrimMaterial> trimMaterialRegistry);

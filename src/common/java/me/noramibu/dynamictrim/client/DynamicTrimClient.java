@@ -5,7 +5,7 @@ import me.noramibu.dynamictrim.client.adapters.DynamicTrimsTrimModelLoaderAdapte
 import me.noramibu.dynamictrim.client.mixin.ItemPropertiesAccessor;
 import me.noramibu.dynamictrim.runtime.client.RuntimeTrimsClient;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.armortrim.ArmorTrim;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
 
 public final class DynamicTrimClient {
     private static boolean modelPredicatesRegistered;

@@ -17,7 +17,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.KnownPack;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.armortrim.TrimMaterial;
+import net.minecraft.world.item.equipment.trim.TrimMaterial;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -71,7 +71,7 @@ public abstract class RegistryLoaderMixin {
                         newMaterial.getValue(),
                         RuntimeTrims.MATERIAL_MODEL_INDEX,
                         Map.of(),
-                        Component.translatable("dynamictrim.material", newMaterial.getValue().value().getDescription().getString())
+                        Component.translatable("dynamictrim.material", newMaterial.getValue().value().getName().getString())
                 );
                 trimMaterialRegistry.register(trimRegKey, itemMaterial, info);
             }

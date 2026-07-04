@@ -12,7 +12,7 @@ import me.noramibu.dynamictrim.runtime.client.render.TrimRenderer;
 import me.noramibu.dynamictrim.runtime.client.render.adapter.DefaultTrimRendererAdapter;
 import me.noramibu.dynamictrim.runtime.client.shader.TrimShaderManager;
 import me.noramibu.dynamictrim.runtime.client.shader.adapter.DefaultTrimRenderLayerAdapter;
-import net.minecraft.world.item.armortrim.ArmorTrim;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
 
 public final class RuntimeTrimsClient {
     private static final LayerData layerData = new LayerData();

@@ -6,6 +6,7 @@ import me.noramibu.dynamictrim.runtime.client.mixin.accessor.GlUniformAccessor;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import java.util.List;
 import org.joml.Matrix4f;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,9 +16,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.nio.IntBuffer;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.CompiledShaderProgram;
+import net.minecraft.client.renderer.ShaderProgramConfig;
 
-@Mixin(ShaderInstance.class)
+@Mixin(CompiledShaderProgram.class)
 public abstract class ShaderProgramMixin implements ShaderProgramExtender {
     @Shadow @Nullable
     public abstract Uniform getUniform(String name);
@@ -29,10 +31,10 @@ public abstract class ShaderProgramMixin implements ShaderProgramExtender {
     private Uniform runtimetrims$debug;
 
     @Inject(
-            method = "<init>",
+            method = "setupUniforms",
             at = @At("TAIL")
     )
-    private void initAdditionalUniforms(CallbackInfo ci) {
+    private void initAdditionalUniforms(List<ShaderProgramConfig.Uniform> uniforms, List<ShaderProgramConfig.Sampler> samplers, CallbackInfo ci) {
         runtimetrims$trimPalette = getUniform("dynamictrim_TrimPalette");
         runtimetrims$debug = getUniform("dynamictrim_Debug");
     }
@@ -51,7 +53,7 @@ public abstract class ShaderProgramMixin implements ShaderProgramExtender {
             method = "setDefaultUniforms",
             at = @At(
                     value = "INVOKE",
-                    target = "Lcom/mojang/blaze3d/systems/RenderSystem;setupShaderLights(Lnet/minecraft/client/renderer/ShaderInstance;)V"
+                    target = "Lcom/mojang/blaze3d/systems/RenderSystem;setupShaderLights(Lnet/minecraft/client/renderer/CompiledShaderProgram;)V"
             )
     )
     private void setAdditionalUniforms(VertexFormat.Mode mode, Matrix4f modelViewMatrix, Matrix4f projectionMatrix, Window window, CallbackInfo ci) {

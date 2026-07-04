@@ -6,7 +6,7 @@ import me.noramibu.dynamictrim.runtime.client.colour.OkLabHelper;
 import com.google.common.collect.Lists;
 import javax.imageio.ImageIO;
 import net.minecraft.Util;
-import net.minecraft.util.FastColor;
+import net.minecraft.util.ARGB;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Objects;
 
 public final class TrimPalette {
-    public static final TrimPalette DEFAULT = new TrimPalette(FastColor.ARGB32.color(255, 255, 255, 255));
+    public static final TrimPalette DEFAULT = new TrimPalette(ARGB.color(255, 255, 255, 255));
     public static final int PALETTE_SIZE = 8;
     private final List<Integer> staticColours;
     private final List<Integer> animatedColours;

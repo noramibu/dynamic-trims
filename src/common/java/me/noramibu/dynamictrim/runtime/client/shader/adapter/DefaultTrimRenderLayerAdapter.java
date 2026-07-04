@@ -9,6 +9,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.Sheets;
+import net.minecraft.util.TriState;
 
 public final class DefaultTrimRenderLayerAdapter extends TrimRenderLayerAdpater {
     private final MemoizedFunction<TrimPalette, RenderType> DYNAMIC_TRIM_RENDER_LAYER = Memoizer.memoize(palette -> RenderType.create(
@@ -28,7 +29,7 @@ public final class DefaultTrimRenderLayerAdapter extends TrimRenderLayerAdpater 
 
     protected RenderType.CompositeState.CompositeStateBuilder getPhaseParametersBuilder() {
         return RenderType.CompositeState.builder()
-                .setTextureState(new RenderStateShard.TextureStateShard(Sheets.ARMOR_TRIMS_SHEET, false, false))
+                .setTextureState(new RenderStateShard.TextureStateShard(Sheets.ARMOR_TRIMS_SHEET, TriState.FALSE, false))
                 .setCullState(RenderPhaseAccessor.getDisableCulling())
                 .setTransparencyState(RenderPhaseAccessor.getNoTransparency())
                 .setLightmapState(RenderPhaseAccessor.getEnableLightmap())

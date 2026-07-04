@@ -4,15 +4,22 @@ import me.noramibu.dynamictrim.runtime.client.palette.TrimPalette;
 import me.noramibu.dynamictrim.runtime.client.shader.adapter.TrimRenderLayerAdpater;
 import me.noramibu.dynamictrim.runtime.util.ItemAdaptable;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.client.renderer.ShaderDefines;
+import net.minecraft.client.renderer.ShaderProgram;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 
 public final class TrimShaderManager extends ItemAdaptable<TrimRenderLayerAdpater> {
-    public ShaderInstance renderTypeDynamicTrimProgram;
+    private static final ShaderProgram DYNAMIC_TRIM_PROGRAM = new ShaderProgram(
+            ResourceLocation.withDefaultNamespace("core/rendertype_dynamic_trim"),
+            DefaultVertexFormat.NEW_ENTITY,
+            ShaderDefines.EMPTY
+    );
 
-    private final RenderStateShard.ShaderStateShard DYNAMIC_TRIM_PROGRAM = new RenderStateShard.ShaderStateShard(() -> renderTypeDynamicTrimProgram);
+    private final RenderStateShard.ShaderStateShard dynamicTrimProgram = new RenderStateShard.ShaderStateShard(DYNAMIC_TRIM_PROGRAM);
 
     private int[] trimPalette = new int[8];
 
@@ -35,6 +42,6 @@ public final class TrimShaderManager extends ItemAdaptable<TrimRenderLayerAdpate
     }
 
     public RenderStateShard.ShaderStateShard getProgram() {
-        return DYNAMIC_TRIM_PROGRAM;
+        return dynamicTrimProgram;
     }
 }

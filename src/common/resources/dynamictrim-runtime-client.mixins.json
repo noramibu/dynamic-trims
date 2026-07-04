@@ -20,7 +20,6 @@
     "render.ArmorFeatureRendererMixin",
     "render.MinecraftClientMixin",
     "resource.MultiPackResourceManagerMixin",
-    "shader.GameRendererMixin",
     "shader.RenderLayer$MultiPhaseParametersMixin",
     "shader.ShaderProgramMixin"
   ]

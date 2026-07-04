@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -102,7 +103,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
 
             String itemPath = matcher.group(1);
             ResourceLocation itemId = ResourceLocation.fromNamespaceAndPath(resourceId.getNamespace(), itemPath);
-            Item item = BuiltInRegistries.ITEM.get(itemId);
+            Item item = BuiltInRegistries.ITEM.get(itemId).map(Holder::value).orElse(Items.AIR);
             if (item == Items.AIR) continue;
             if (!getAdapter(item).canTrim(item)) continue;
 

@@ -9,16 +9,21 @@ import me.noramibu.dynamictrim.runtime.client.model.item.json.ModelOverride;
 import me.noramibu.dynamictrim.runtime.client.model.item.json.TrimmableItemModel;
 import java.util.Map;
 import java.util.function.BiFunction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.AnimalArmorItem;
-import net.minecraft.world.item.ElytraItem;
-import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.equipment.Equippable;
 
 public class DefaultTrimModelLoaderAdapter extends TrimModelLoaderAdapter {
     @Override
     public boolean canTrim(Item item) {
-        return item instanceof Equipable equipment && !(equipment instanceof AnimalArmorItem || equipment instanceof ElytraItem) && equipment.getEquipmentSlot().isArmor();
+        Equippable equipment = getEquippable(item);
+        return equipment != null
+                && !(item instanceof AnimalArmorItem)
+                && item != Items.ELYTRA
+                && equipment.slot().isArmor();
     }
 
     @Override
@@ -29,7 +34,7 @@ public class DefaultTrimModelLoaderAdapter extends TrimModelLoaderAdapter {
     @Override
     public String getLayerName(Item item, int layerIndex) {
         return "minecraft:trims/items/%s_trim_%d_%s".formatted(
-                getEquipmentType((Equipable) item),
+                getEquipmentType(item),
                 layerIndex,
                 RuntimeTrims.DYNAMIC
         );
@@ -51,8 +56,17 @@ public class DefaultTrimModelLoaderAdapter extends TrimModelLoaderAdapter {
         return Map.of(modelId, overrideCreator.apply(itemModel, resource));
     }
 
-    protected String getEquipmentType(Equipable equipment) {
-        return switch (equipment.getEquipmentSlot()) {
+    protected Equippable getEquippable(Item item) {
+        return item.components().get(DataComponents.EQUIPPABLE);
+    }
+
+    protected String getEquipmentType(Item item) {
+        Equippable equipment = getEquippable(item);
+        return equipment == null ? null : getEquipmentType(equipment);
+    }
+
+    protected String getEquipmentType(Equippable equipment) {
+        return switch (equipment.slot()) {
             case HEAD -> "helmet";
             case CHEST -> "chestplate";
             case LEGS -> "leggings";

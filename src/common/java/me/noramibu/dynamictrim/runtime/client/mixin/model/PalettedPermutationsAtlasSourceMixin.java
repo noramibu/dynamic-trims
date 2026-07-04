@@ -16,7 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.FastColor;
+import net.minecraft.util.ARGB;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -88,7 +88,7 @@ public abstract class PalettedPermutationsAtlasSourceMixin {
         List<Integer> colours = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
             int brightness = (int) (255 - dif * i);
-            colours.add(FastColor.ARGB32.color(255, brightness, brightness, brightness));
+            colours.add(ARGB.color(255, brightness, brightness, brightness));
         }
         TrimPalette palette = new TrimPalette(colours);
         return new Resource(defaultPack, palette::toInputStream);

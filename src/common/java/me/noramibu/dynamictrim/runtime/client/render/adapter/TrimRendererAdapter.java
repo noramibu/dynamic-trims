@@ -5,7 +5,7 @@ import me.noramibu.dynamictrim.runtime.client.shader.RenderContext;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.world.item.armortrim.ArmorTrim;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
 
 public abstract class TrimRendererAdapter {
     /**

@@ -70,7 +70,7 @@ subprojects {
 
         runConfigs.all {
             ideConfigGenerated(true)
-            runDir = rootProject.file("run/$loader").path
+            runDir = "../../run/$loader"
         }
 
         runConfigs["server"].apply {
