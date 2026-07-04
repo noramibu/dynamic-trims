@@ -1,0 +1,27 @@
+{
+  "required": true,
+  "package": "me.noramibu.dynamictrim.runtime.client.mixin",
+  "minVersion": "0.8",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "ArmorTrimMaterialMixin",
+    "accessor.GlUniformAccessor",
+    "accessor.ItemColorsAccessor",
+    "accessor.PalettedPermutationsAtlasSourceAccessor",
+    "accessor.RenderPhaseAccessor",
+    "accessor.SpriteContentsAccessor",
+    "model.AtlasLoaderMixin",
+    "model.AtlasSourceManagerMixin",
+    "model.BakedModelManagerMixin",
+    "model.ItemModelGeneratorMixin",
+    "model.PalettedPermutationsAtlasSourceMixin",
+    "render.ArmorFeatureRendererMixin",
+    "render.MinecraftClientMixin",
+    "resource.MultiPackResourceManagerMixin",
+    "shader.GameRendererMixin",
+    "shader.RenderLayer$MultiPhaseParametersMixin",
+    "shader.ShaderProgramMixin"
+  ]
+}

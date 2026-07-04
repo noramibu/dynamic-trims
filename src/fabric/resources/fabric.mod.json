@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "dynamictrim",
+  "version": "${version}",
+  "name": "Dynamic Trims",
+  "description": "${description}",
+  "authors": [
+    "noramibu",
+    "Bawnorton"
+  ],
+  "license": "MIT",
+  "icon": "assets/dynamictrim/icon.png",
+  "contact": {
+    "homepage": "https://modrinth.com/project/dynamic-trims/",
+    "sources": "https://github.com/noramibu/dynamic-trims",
+    "issues": "https://github.com/noramibu/dynamic-trims/issues",
+    "discord": "https://discord.gg/FaxbR9eEFW"
+  },
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "me.noramibu.dynamictrim.fabric.DynamicTrimFabric"
+    ],
+    "client": [
+      "me.noramibu.dynamictrim.fabric.client.DynamicTrimFabricClient"
+    ]
+  },
+  "mixins": [
+    "dynamictrim.mixins.json",
+    {
+      "config": "dynamictrim-client.mixins.json",
+      "environment": "client"
+    },
+    {
+      "config": "dynamictrim-runtime-client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "${minecraft_dependency}",
+    "java": ">=21"
+  }
+}
