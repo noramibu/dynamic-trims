@@ -57,7 +57,7 @@ public abstract class RegistryLoaderMixin {
                     Optional.of(new KnownPack(
                             RuntimeTrims.MOD_ID,
                             "runtime_trim_materials",
-                            SharedConstants.getCurrentVersion().getId()
+                            SharedConstants.getCurrentVersion().id()
                     )),
                     Lifecycle.stable()
             );

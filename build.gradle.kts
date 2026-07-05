@@ -87,6 +87,9 @@ subprojects {
         if (loader == "neoforge") {
             "mappings"(project.extensions.getByType<LoomGradleExtensionAPI>().officialMojangMappings())
             "neoForge"("net.neoforged:neoforge:$loaderVersion")
+            "forgeRuntimeLibrary"("cpw.mods:modlauncher:11.0.5") {
+                exclude(group = "cpw.mods", module = "securejarhandler")
+            }
         }
     }
 
