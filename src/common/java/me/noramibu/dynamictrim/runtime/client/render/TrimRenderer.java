@@ -8,12 +8,11 @@ import me.noramibu.dynamictrim.runtime.client.render.adapter.TrimRendererAdapter
 import me.noramibu.dynamictrim.runtime.client.shader.RenderContext;
 import me.noramibu.dynamictrim.runtime.util.ItemAdaptable;
 import com.google.common.collect.Lists;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.model.Model;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -65,127 +64,64 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         return getAdapter(context.trimmed()).getAlpha(context);
     }
 
-    /**
-     * Uses default render layer<br>
-     * Uses default model id
-     * @see #renderTrim(ArmorTrim, TextureAtlasSprite, PoseStack, MultiBufferSource, int, int, int, ResourceLocation, TextureAtlas, RenderType, RenderCallback)
-     */
-    public void renderTrim(ArmorTrim trim, TextureAtlasSprite sprite, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay, int colour, TextureAtlas atlasTexture, RenderCallback callback) {
-        renderTrim(trim, sprite, matrices, vertexConsumers, light, overlay, colour, atlasTexture, null, callback);
-    }
-
-    /**
-     * Uses default render layer
-     * @see #renderTrim(ArmorTrim, TextureAtlasSprite, PoseStack, MultiBufferSource, int, int, int, ResourceLocation, TextureAtlas, RenderType, RenderCallback)
-     */
-    public void renderTrim(ArmorTrim trim, TextureAtlasSprite sprite, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay, int colour, ResourceLocation modelId, TextureAtlas atlasTexture, RenderCallback callback) {
-        renderTrim(trim, sprite, matrices, vertexConsumers, light, overlay, colour, modelId, atlasTexture, null, callback);
-    }
-
-    /**
-     * Uses default model id
-     * @see #renderTrim(ArmorTrim, TextureAtlasSprite, PoseStack, MultiBufferSource, int, int, int, ResourceLocation, TextureAtlas, RenderType, RenderCallback)
-     */
-    public void renderTrim(ArmorTrim trim, TextureAtlasSprite sprite, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay, int colour, TextureAtlas atlasTexture, RenderType renderLayer, RenderCallback callback) {
-        renderTrim(trim, sprite, matrices, vertexConsumers, light, overlay, colour, getModelId(sprite), atlasTexture, renderLayer, callback);
-    }
-
-    /**
-     * Handles overriding automatically
-     * @see #renderTrim(ArmorTrim, TextureAtlasSprite, PoseStack, MultiBufferSource, int, int, int, ResourceLocation, TextureAtlas, RenderType, RenderCallback)
-     */
-    public void renderTrim(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset, TextureAtlasSprite sprite, PoseStack matrixStack, MultiBufferSource vertexConsumers, int light, int overlay, int colour, TextureAtlas atlasTexture, RenderCallback callback) {
-        if (RuntimeTrimsClient.overrideExisting) {
-            renderTrim(trim, sprite, matrixStack, vertexConsumers, light, overlay, colour, getOverridenId(trim, layerType, equipmentAsset), atlasTexture, callback);
-        } else {
-            renderTrim(trim, sprite, matrixStack, vertexConsumers, light, overlay, colour, atlasTexture, callback);
-        }
-    }
-
-    /**
-     * Calculates how to render a trim then passes it to the {@link RenderCallback}
-     * <br>
-     * Types of rendering:
-     * <ul>
-     *  <li><b>Legacy Rendering</b>: Splits the pattern texture into layers and renders each layer of separately with the colour of that layer derived from the trim palette</li>
-     *  <li><b>Shader Rendering</b>: Uses a core shader to render the trim. ~8x more performant than Legacy Rendering</li>
-     * </ul>
-     *
-     * @param sprite          The sprite of the trim pattern, if overriding existing is enabled, it will be ignored.
-     * @param vertexConsumers Providers for the Legacy and Shader renderers
-     * @param modelId         Optionally provide the model to use
-     * @param atlasTexture    The atlas to pull the trim texture layers from. Used by Legacy
-     * @param renderLayer     Optionally provide a render layer, otherwise the default will be used.
-     * @param callback        The renderer. Typically {@link Model#renderToBuffer(PoseStack, VertexConsumer, int, int, int)}. But can be a {@link Operation} if the call is wrapped.
-     */
-    public void renderTrim(ArmorTrim trim, TextureAtlasSprite sprite, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay, int colour, ResourceLocation modelId, TextureAtlas atlasTexture, RenderType renderLayer, RenderCallback callback) {
+    public <S> void submitTrim(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset, TextureAtlasSprite sprite, Model<? super S> model, S state, PoseStack matrices, OrderedSubmitNodeCollector collector, int light, int overlay, int colour, int outlineColour, TextureAtlas atlasTexture, ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
         if(context == null) {
             throw new IllegalStateException("Trim shader context not available");
         }
 
-        colour = ARGBColourHelper.withAlpha(colour, getTrimAlpha(context));
+        RenderContext renderContext = context;
+        ResourceLocation modelId = RuntimeTrimsClient.overrideExisting ? getOverridenId(trim, layerType, equipmentAsset) : sprite.contents().name();
+        colour = ARGBColourHelper.withAlpha(colour, getTrimAlpha(renderContext));
 
         if (useLegacyRenderer(sprite)) {
-            legacyRenderTrim(context, trim, matrices, vertexConsumers, light, overlay, modelId, atlasTexture, renderLayer, callback);
+            submitLegacyTrim(renderContext, trim, model, state, matrices, collector, light, overlay, modelId, atlasTexture, outlineColour, crumblingOverlay);
         } else {
-            callback.render(matrices, sprite.wrap(vertexConsumers.getBuffer(getLegacyRenderLayer(context.trimmed(), trim))), light, overlay, colour);
+            collector.submitModel(model, state, matrices, getLegacyRenderLayer(renderContext.trimmed(), trim), light, overlay, colour, sprite, outlineColour, crumblingOverlay);
         }
     }
 
-    public void legacyRenderTrim(RenderContext context, ArmorTrim trim, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay, ResourceLocation modelId, TextureAtlas atlasTexture, RenderType renderLayer, RenderCallback callback) {
+    private <S> void submitLegacyTrim(RenderContext context, ArmorTrim trim, Model<? super S> model, S state, PoseStack matrices, OrderedSubmitNodeCollector collector, int light, int overlay, ResourceLocation modelId, TextureAtlas atlasTexture, int outlineColour, ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
         if(modelId.equals(MissingTextureAtlasSprite.getLocation())) return;
 
+        RenderType renderLayer = getLegacyRenderLayer(context.trimmed(), trim);
+        forEachLegacyTrimLayer(context, trim, modelId, atlasTexture, (layerSprite, colour) ->
+                collector.submitModel(model, state, matrices, renderLayer, light, overlay, colour, layerSprite, outlineColour, crumblingOverlay)
+        );
+    }
+
+    private void forEachLegacyTrimLayer(RenderContext context, ArmorTrim trim, ResourceLocation modelId, TextureAtlas atlasTexture, LegacyTrimLayerConsumer consumer) {
         TrimMaterial trimMaterial = trim.material().value();
-        Item trimItem = getTrimItem(trim);
-        Item trimmed = context.trimmed();
-
-        if(renderLayer == null) {
-            renderLayer = getLegacyRenderLayer(trimmed, trim);
-        }
-
         ResourceLocation patternId = modelId.withPath(path -> "textures/%s.png".formatted(path.substring(0, path.lastIndexOf("_"))));
         int maxSupportedLayer = RuntimeTrimsClient.getLayerData().getMaxSupportedLayer(patternId);
 
-        TrimPalette trimPalette = RuntimeTrimsClient.getTrimPalettes().getOrGeneratePalette(trimItem);
+        TrimPalette trimPalette = RuntimeTrimsClient.getTrimPalettes().getOrGeneratePalette(getTrimItem(trim));
         List<Integer> paletteColours = Lists.reverse(trimPalette.getColours().subList(0, maxSupportedLayer));
         String assetName = getAssetName(trimMaterial);
-        TrimRendererAdapter adapter = getAdapter(trimmed);
         int alpha = getTrimAlpha(context);
         for (int i = 0; i < maxSupportedLayer; i++) {
             ResourceLocation layerSpriteId = modelId.withPath(modelId.getPath().replace(assetName, "%d_%s".formatted(i, assetName)));
             TextureAtlasSprite layerSprite = atlasTexture.getSprite(layerSpriteId);
-            VertexConsumer vertexConsumer = layerSprite.wrap(vertexConsumers.getBuffer(renderLayer));
             int colour = ARGBColourHelper.withAlpha(paletteColours.get(i), alpha);
-            adapter.render(context, matrices, vertexConsumer, light, overlay, colour, callback);
+            consumer.accept(layerSprite, colour);
         }
+    }
+
+    @FunctionalInterface
+    private interface LegacyTrimLayerConsumer {
+        void accept(TextureAtlasSprite sprite, int colour);
     }
 
     public String getAssetName(TrimMaterial trimMaterial) {
-        String assetName;
-        if(RuntimeTrimsClient.overrideExisting) {
-            assetName = RuntimeTrims.DYNAMIC;
-        } else {
-            assetName = trimMaterial.assets().base().suffix();
-        }
-        return assetName;
+        return RuntimeTrimsClient.overrideExisting ? RuntimeTrims.DYNAMIC : trimMaterial.assets().base().suffix();
     }
 
     public ResourceLocation getOverridenId(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset) {
-        ResourceLocation modelId = getModelId(trim, layerType, equipmentAsset);
-        modelId = modelId.withPath(path -> {
-            TrimMaterial trimMaterial = trim.material().value();
-            String assetId = trimMaterial.assets().assetId(equipmentAsset).suffix();
-            return path.replace(assetId, RuntimeTrims.DYNAMIC);
-        });
-        return modelId;
-    }
-
-    public ResourceLocation getModelId(TextureAtlasSprite sprite) {
-        return sprite.contents().name();
+        String assetId = trim.material().value().assets().assetId(equipmentAsset).suffix();
+        return getModelId(trim, layerType, equipmentAsset).withPath(path -> path.replace(assetId, RuntimeTrims.DYNAMIC));
     }
 
     public ResourceLocation getModelId(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset) {
-        return trim.layerAssetId(layerType.getSerializedName(), equipmentAsset);
+        return trim.layerAssetId(layerType.trimAssetPrefix(), equipmentAsset);
     }
 
     private Item getTrimItem(ArmorTrim trim) {
@@ -193,9 +129,5 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
                 .unwrapKey()
                 .flatMap(key -> BuiltInRegistries.ITEM.get(key.location()).map(Holder::value))
                 .orElse(Items.AIR);
-    }
-
-    public interface RenderCallback {
-        void render(PoseStack matrices, VertexConsumer vertices, int light, int overlay, int colour);
     }
 }

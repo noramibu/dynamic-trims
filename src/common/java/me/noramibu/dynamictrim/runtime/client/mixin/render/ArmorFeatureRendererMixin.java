@@ -5,9 +5,10 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.model.Model;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.entity.layers.EquipmentLayerRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -38,38 +39,46 @@ public abstract class ArmorFeatureRendererMixin {
     }
 
     @WrapOperation(
-            method = "renderLayers(Lnet/minecraft/client/resources/model/EquipmentClientInfo$LayerType;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/client/model/Model;Lnet/minecraft/world/item/ItemStack;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/resources/ResourceLocation;)V",
+            method = "renderLayers(Lnet/minecraft/client/resources/model/EquipmentClientInfo$LayerType;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lnet/minecraft/world/item/ItemStack;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/resources/ResourceLocation;II)V",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/model/Model;renderToBuffer(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;II)V"
+                    target = "Lnet/minecraft/client/renderer/OrderedSubmitNodeCollector;submitModel(Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/RenderType;IIILnet/minecraft/client/renderer/texture/TextureAtlasSprite;ILnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;)V",
+                    ordinal = 2
             )
     )
-    private void renderDynamicTrim(
-            Model instance,
+    private <S> void renderDynamicTrim(
+            OrderedSubmitNodeCollector collector,
+            Model<? super S> model,
+            S state,
             PoseStack matrixStack,
-            VertexConsumer vertexConsumer,
+            RenderType renderType,
             int light,
             int overlay,
+            int colour,
+            TextureAtlasSprite sprite,
+            int outlineColour,
+            ModelFeatureRenderer.CrumblingOverlay crumblingOverlay,
             Operation<Void> original,
             @Local(argsOnly = true) EquipmentClientInfo.LayerType layerType,
             @Local(argsOnly = true) ResourceKey<EquipmentAsset> equipmentAsset,
             @Local(argsOnly = true) ItemStack stack,
-            @Local(argsOnly = true) MultiBufferSource vertexConsumers,
-            @Local ArmorTrim trim,
-            @Local TextureAtlasSprite sprite) {
+            @Local ArmorTrim trim) {
         RuntimeTrimsClient.getTrimRenderer().setContext(stack.getItem());
-        RuntimeTrimsClient.getTrimRenderer().renderTrim(
+        RuntimeTrimsClient.getTrimRenderer().submitTrim(
                 trim,
                 layerType,
                 equipmentAsset,
                 sprite,
+                model,
+                state,
                 matrixStack,
-                vertexConsumers,
+                collector,
                 light,
                 overlay,
-                -1,
+                colour,
+                outlineColour,
                 dynamictrim$armorTrimAtlas,
-                instance::renderToBuffer
+                crumblingOverlay
         );
     }
 }

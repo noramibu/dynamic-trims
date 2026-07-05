@@ -1,9 +1,7 @@
 package me.noramibu.dynamictrim.runtime.client.mixin.model;
 
 import me.noramibu.dynamictrim.runtime.client.RuntimeTrimsClient;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
@@ -12,19 +10,15 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
-import net.minecraft.client.resources.model.AtlasSet;
+import net.minecraft.client.resources.model.AtlasManager;
 import net.minecraft.client.resources.model.ModelManager;
+import net.minecraft.data.AtlasIds;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.server.packs.resources.ResourceManager;
 
 @Mixin(ModelManager.class)
 public abstract class BakedModelManagerMixin {
-    @Shadow @Final private AtlasSet atlases;
-
-    @Shadow private int maxMipmapLevels;
-
     @ModifyArg(
             method = "loadBlockModels",
             at = @At(
@@ -41,7 +35,7 @@ public abstract class BakedModelManagerMixin {
             method = "reload",
             at = @At("HEAD")
     )
-    private void preLoadAtlases(PreparableReloadListener.PreparationBarrier synchronizer, ResourceManager manager, Executor prepareExecutor, Executor applyExecutor, CallbackInfoReturnable<CompletableFuture<Void>> cir) {
-        atlases.scheduleLoad(manager, maxMipmapLevels, prepareExecutor).values().forEach(CompletableFuture::join);
+    private void preLoadAtlases(PreparableReloadListener.SharedState sharedState, Executor prepareExecutor, PreparableReloadListener.PreparationBarrier synchronizer, Executor applyExecutor, CallbackInfoReturnable<CompletableFuture<Void>> cir) {
+        sharedState.get(AtlasManager.PENDING_STITCH).get(AtlasIds.BLOCKS).join();
     }
 }

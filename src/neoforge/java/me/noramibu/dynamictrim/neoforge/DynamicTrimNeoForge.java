@@ -10,7 +10,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 public final class DynamicTrimNeoForge {
     public DynamicTrimNeoForge() {
         DynamicTrim.init();
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             DynamicTrimNeoForgeClient.init();
         }
     }
