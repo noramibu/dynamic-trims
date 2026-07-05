@@ -135,7 +135,7 @@ public class DynamicTrimsTrimModelLoaderAdapter extends DefaultTrimModelLoaderAd
         return overrides;
     }
 
-    private static boolean hasItemTexture(String equipmentType, ResourceLocation patternId) {
+    public static boolean hasItemTexture(String equipmentType, ResourceLocation patternId) {
         String path = "assets/minecraft/textures/trims/items/%s/%s.png".formatted(
                 equipmentType,
                 getPatternTextureName(patternId)
@@ -147,7 +147,7 @@ public class DynamicTrimsTrimModelLoaderAdapter extends DefaultTrimModelLoaderAd
         return ResourceLocation.parse("%s-%s".formatted(baseModelId, getPatternTextureName(patternId)));
     }
 
-    private static String getPatternTextureName(ResourceLocation patternId) {
+    public static String getPatternTextureName(ResourceLocation patternId) {
         return patternId.toString().replace(":", "-");
     }
 

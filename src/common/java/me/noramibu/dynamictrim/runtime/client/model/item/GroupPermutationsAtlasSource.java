@@ -1,35 +1,41 @@
 package me.noramibu.dynamictrim.runtime.client.model.item;
 
-import me.noramibu.dynamictrim.runtime.RuntimeTrims;
-import me.noramibu.dynamictrim.runtime.client.mixin.accessor.PalettedPermutationsAtlasSourceAccessor;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import me.noramibu.dynamictrim.runtime.RuntimeTrims;
+import net.minecraft.client.renderer.texture.atlas.SpriteSource;
 import net.minecraft.client.renderer.texture.atlas.SpriteSourceType;
 import net.minecraft.client.renderer.texture.atlas.sources.PalettedPermutations;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 
-public class GroupPermutationsAtlasSource extends PalettedPermutations {
-    public static final MapCodec<GroupPermutationsAtlasSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+public record GroupPermutationsAtlasSource(
+        List<ResourceLocation> directories,
+        ResourceLocation paletteKey,
+        Map<String, ResourceLocation> permutations)
+        implements SpriteSource {
+    public static final MapCodec<GroupPermutationsAtlasSource> CODEC =
+            RecordCodecBuilder.mapCodec(instance -> instance.group(
                     Codec.list(ResourceLocation.CODEC)
                             .fieldOf("directories")
-                            .forGetter(source -> ((PalettedPermutationsAtlasSourceAccessor) source).getTextures()),
+                            .forGetter(GroupPermutationsAtlasSource::directories),
                     ResourceLocation.CODEC.fieldOf("palette_key")
-                            .forGetter(source -> ((PalettedPermutationsAtlasSourceAccessor) source).getPaletteKey()),
+                            .forGetter(GroupPermutationsAtlasSource::paletteKey),
                     Codec.unboundedMap(Codec.STRING, ResourceLocation.CODEC)
                             .fieldOf("permutations")
-                            .forGetter(source -> ((PalettedPermutationsAtlasSourceAccessor) source).getPermutations())
+                            .forGetter(GroupPermutationsAtlasSource::permutations)
             ).apply(instance, GroupPermutationsAtlasSource::new));
-
     public static SpriteSourceType TYPE;
 
-    private GroupPermutationsAtlasSource(List<ResourceLocation> directories, ResourceLocation paletteKey, Map<String, ResourceLocation> permutations) {
-        super(new ArrayList<>(directories), paletteKey, addBlankPermutation(permutations));
+    public GroupPermutationsAtlasSource {
+        directories = List.copyOf(directories);
+        permutations = addBlankPermutation(permutations);
     }
 
     public static void init() {
@@ -46,8 +52,7 @@ public class GroupPermutationsAtlasSource extends PalettedPermutations {
     @Override
     public void run(ResourceManager resourceManager, Output regions) {
         List<ResourceLocation> combinedTextures = new ArrayList<>();
-        List<ResourceLocation> originalTextures = ((PalettedPermutationsAtlasSourceAccessor) this).getTextures();
-        for (ResourceLocation dir : originalTextures) {
+        for (ResourceLocation dir : directories) {
             String textureDirectory = "textures/" + dir.getPath();
             String childTextureDirectory = textureDirectory + "/";
             resourceManager.listResources(textureDirectory, id -> {
@@ -59,6 +64,7 @@ public class GroupPermutationsAtlasSource extends PalettedPermutations {
                         if (!path.startsWith(childTextureDirectory)) {
                             return;
                         }
+
                         String texturePath = path.substring(
                                 childTextureDirectory.length(),
                                 path.length() - ".png".length()
@@ -73,13 +79,29 @@ public class GroupPermutationsAtlasSource extends PalettedPermutations {
                         }
                     });
         }
-        originalTextures.clear();
-        originalTextures.addAll(combinedTextures);
-        super.run(resourceManager, regions);
+
+        createPalettedPermutations(combinedTextures, paletteKey, permutations).run(resourceManager, regions);
     }
 
     @Override
     public SpriteSourceType type() {
         return TYPE;
+    }
+
+    private static PalettedPermutations createPalettedPermutations(
+            List<ResourceLocation> textures,
+            ResourceLocation paletteKey,
+            Map<String, ResourceLocation> permutations) {
+        try {
+            Constructor<PalettedPermutations> constructor = PalettedPermutations.class.getDeclaredConstructor(
+                    List.class,
+                    ResourceLocation.class,
+                    Map.class
+            );
+            constructor.setAccessible(true);
+            return constructor.newInstance(textures, paletteKey, permutations);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Could not create paletted trim permutations", e);
+        }
     }
 }

@@ -6,41 +6,40 @@ import me.noramibu.dynamictrim.runtime.client.colour.ColourHSB;
 import me.noramibu.dynamictrim.runtime.client.colour.OkLabHelper;
 import me.noramibu.dynamictrim.runtime.client.mixin.accessor.SpriteContentsAccessor;
 import com.mojang.blaze3d.platform.NativeImage;
-import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.core.Direction;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public final class TrimPaletteGenerator {
     public TrimPalette generatePalette(Item item) {
         Minecraft client = Minecraft.getInstance();
-        ItemRenderer itemRenderer = client.getItemRenderer();
         LocalPlayer player = client.player;
         if (player == null) {
             return TrimPalette.DEFAULT;
         }
 
         ItemStack stack = item.getDefaultInstance();
-        BakedModel itemModel = itemRenderer.getModel(stack, client.level, player, player.getId());
-
-        List<Integer> colours;
-        if(itemModel.isCustomRenderer()) {
-            colours = getColoursFromBuiltin(itemModel);
-        } else {
-            colours = getColoursFromStandard(itemModel);
-        }
+        ItemStackRenderState renderState = new ItemStackRenderState();
+        client.getItemModelResolver().updateForTopItem(
+                renderState,
+                stack,
+                ItemDisplayContext.GUI,
+                false,
+                client.level,
+                player,
+                player.getId()
+        );
+        List<Integer> colours = getColoursFromSprite(renderState.pickParticleIcon(RandomSource.create()));
 
         List<Integer> vibrantPalette = generateVibrantPalette(colours);
         if(vibrantPalette.isEmpty()) {
@@ -122,34 +121,8 @@ public final class TrimPaletteGenerator {
         return stretchedPalette;
     }
 
-    private List<Integer> getColoursFromBuiltin(BakedModel model) {
-        return Arrays.stream(extractColours(model.getParticleIcon())).boxed().toList();
-    }
-
-    private List<Integer> getColoursFromStandard(BakedModel model) {
-        List<BakedQuad> quads = new ArrayList<>();
-        RandomSource random = RandomSource.create();
-        for (Direction direction : Direction.values()) {
-            random.setSeed(42);
-            quads.addAll(model.getQuads(null, direction, random));
-        }
-        random.setSeed(42);
-        quads.addAll(model.getQuads(null, null, random));
-        return getColoursFromQuads(quads);
-    }
-
-    /**
-     * Extracts every pixel colour in a quad's sprite ignoring transparent pixels
-     */
-    private @NotNull List<Integer> getColoursFromQuads(List<BakedQuad> quads) {
-        List<Integer> colours = new ArrayList<>(quads.size() * 16 * 16);
-        for (BakedQuad bakedQuad : quads) {
-            int[] colourData = extractColours(bakedQuad.getSprite());
-            for (int colour : colourData) {
-                colours.add(colour);
-            }
-        }
-        return colours.stream().filter(i -> i != 0).toList();
+    private List<Integer> getColoursFromSprite(TextureAtlasSprite sprite) {
+        return Arrays.stream(extractColours(sprite)).boxed().filter(colour -> colour != 0).toList();
     }
 
     // [x * y] = rgb

@@ -6,21 +6,16 @@
     "defaultRequire": 1
   },
   "client": [
-    "ArmorTrimMaterialMixin",
-    "accessor.GlUniformAccessor",
-    "accessor.ItemColorsAccessor",
     "accessor.PalettedPermutationsAtlasSourceAccessor",
-    "accessor.RenderPhaseAccessor",
     "accessor.SpriteContentsAccessor",
     "model.AtlasLoaderMixin",
     "model.AtlasSourceManagerMixin",
     "model.BakedModelManagerMixin",
+    "model.ClientItemInfoLoaderMixin",
     "model.ItemModelGeneratorMixin",
     "model.PalettedPermutationsAtlasSourceMixin",
     "render.ArmorFeatureRendererMixin",
     "render.MinecraftClientMixin",
-    "resource.MultiPackResourceManagerMixin",
-    "shader.RenderLayer$MultiPhaseParametersMixin",
-    "shader.ShaderProgramMixin"
+    "resource.MultiPackResourceManagerMixin"
   ]
 }

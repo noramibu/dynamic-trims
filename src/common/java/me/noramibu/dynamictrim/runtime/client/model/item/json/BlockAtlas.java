@@ -9,11 +9,15 @@ public final class BlockAtlas {
 
     public Optional<Source> getPalettedPermutationsSource(String paletteKey) {
         for(Source source : sources) {
-            if(source.type.equals("paletted_permutations") && source.paletteKey.equals(paletteKey)) {
+            if(idMatches(source.type, "paletted_permutations") && idMatches(source.paletteKey, paletteKey)) {
                 return Optional.of(source);
             }
         }
         return Optional.empty();
+    }
+
+    private static boolean idMatches(String actual, String expected) {
+        return actual != null && (actual.equals(expected) || actual.equals("minecraft:" + expected));
     }
 
     public void addSource(Source source) {

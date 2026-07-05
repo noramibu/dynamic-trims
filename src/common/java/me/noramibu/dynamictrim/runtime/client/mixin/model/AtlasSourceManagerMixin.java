@@ -12,7 +12,8 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(SpriteSources.class)
 public abstract class AtlasSourceManagerMixin {
-    @Shadow @Final private static BiMap<ResourceLocation, SpriteSourceType> TYPES;
+    @Shadow @Final
+    private static BiMap<ResourceLocation, SpriteSourceType> TYPES;
 
     static {
         GroupPermutationsAtlasSource.TYPE = new SpriteSourceType(GroupPermutationsAtlasSource.CODEC);

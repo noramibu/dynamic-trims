@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 public final class RuntimeTrims {
     public static final String MOD_ID = DynamicTrim.MOD_ID;
     public static final String DYNAMIC = "dynamic";
-    public static final float MATERIAL_MODEL_INDEX = 0.6632484f;
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     private static final TrimMaterialRegistryInjector trimMaterialRegistryInjector = new TrimMaterialRegistryInjector();

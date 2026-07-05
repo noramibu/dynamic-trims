@@ -69,7 +69,6 @@ public abstract class RegistryLoaderMixin {
                 TrimMaterial itemMaterial = new TrimMaterial(
                         RuntimeTrims.DYNAMIC,
                         newMaterial.getValue(),
-                        RuntimeTrims.MATERIAL_MODEL_INDEX,
                         Map.of(),
                         Component.translatable("dynamictrim.material", newMaterial.getValue().value().getName().getString())
                 );
