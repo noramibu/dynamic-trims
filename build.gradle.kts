@@ -6,8 +6,8 @@ import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
     java
-    id("dev.architectury.loom") version "1.9.428" apply false
-    id("architectury-plugin") version "3.4-SNAPSHOT" apply false
+    id("dev.architectury.loom") version "1.17.487" apply false
+    id("architectury-plugin") version "3.5.169" apply false
 }
 
 val minecraftVersion = property("minecraft_version").toString()
@@ -87,9 +87,8 @@ subprojects {
         if (loader == "neoforge") {
             "mappings"(project.extensions.getByType<LoomGradleExtensionAPI>().officialMojangMappings())
             "neoForge"("net.neoforged:neoforge:$loaderVersion")
-            "forgeRuntimeLibrary"("cpw.mods:modlauncher:11.0.5") {
-                exclude(group = "cpw.mods", module = "securejarhandler")
-            }
+            "forgeRuntimeLibrary"("io.github.juuxel:unprotect:2.0.2")
+            "forgeRuntimeLibrary"("io.github.juuxel:unprotect-modlauncher:2.0.2")
         }
     }
 
