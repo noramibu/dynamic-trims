@@ -1,17 +1,13 @@
 package me.noramibu.dynamictrim.runtime.client.model.item.adapter;
 
 import me.noramibu.dynamictrim.runtime.RuntimeTrims;
-import me.noramibu.dynamictrim.runtime.client.RuntimeTrimsClient;
 import me.noramibu.dynamictrim.runtime.client.model.item.JsonParser;
-import me.noramibu.dynamictrim.runtime.client.model.item.TrimModelPredicate;
 import me.noramibu.dynamictrim.runtime.client.model.item.TrimmableResource;
-import me.noramibu.dynamictrim.runtime.client.model.item.json.ModelOverride;
 import me.noramibu.dynamictrim.runtime.client.model.item.json.TrimmableItemModel;
 import java.util.Map;
 import java.util.function.BiFunction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.AnimalArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.equipment.Equippable;
@@ -21,7 +17,6 @@ public class DefaultTrimModelLoaderAdapter extends TrimModelLoaderAdapter {
     public boolean canTrim(Item item) {
         Equippable equipment = getEquippable(item);
         return equipment != null
-                && !(item instanceof AnimalArmorItem)
                 && item != Items.ELYTRA
                 && equipment.slot().isArmor();
     }
@@ -42,18 +37,7 @@ public class DefaultTrimModelLoaderAdapter extends TrimModelLoaderAdapter {
 
     @Override
     public Map<ResourceLocation, TrimmableItemModel> supplyOverrides(JsonParser jsonParser, TrimmableItemModel itemModel, TrimmableResource resource, BiFunction<TrimmableItemModel, TrimmableResource, TrimmableItemModel> overrideCreator) {
-        ResourceLocation modelId = resource.modelId().withSuffix("_%s_trim".formatted(RuntimeTrims.DYNAMIC));
-
-        if(RuntimeTrimsClient.overrideExisting) {
-            itemModel.overrides.forEach(modelOverride -> modelOverride.model = modelId.toString());
-        }
-
-        itemModel.addOverride(ModelOverride.builder()
-                .withModel(modelId.toString())
-                .withPredicate(jsonParser.toJsonObject(TrimModelPredicate.of(RuntimeTrims.MATERIAL_MODEL_INDEX)))
-                .build());
-
-        return Map.of(modelId, overrideCreator.apply(itemModel, resource));
+        return Map.of();
     }
 
     protected Equippable getEquippable(Item item) {

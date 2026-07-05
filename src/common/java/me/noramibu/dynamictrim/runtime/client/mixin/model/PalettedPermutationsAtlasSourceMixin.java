@@ -8,7 +8,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
-import com.mojang.datafixers.util.Function3;
 import javax.imageio.ImageIO;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.atlas.sources.PalettedPermutations;
@@ -26,7 +25,6 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,33 +36,6 @@ import java.util.regex.Pattern;
 
 @Mixin(PalettedPermutations.class)
 public abstract class PalettedPermutationsAtlasSourceMixin {
-    @ModifyArg(
-            method = "method_48487",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lcom/mojang/datafixers/Products$P3;apply(Lcom/mojang/datafixers/kinds/Applicative;Lcom/mojang/datafixers/util/Function3;)Lcom/mojang/datafixers/kinds/App;",
-                    remap = false
-            ),
-            index = 1
-    )
-    private static <R> Function3<List<ResourceLocation>, ResourceLocation, Map<String, ResourceLocation>, R> createDynamicTrimPermutation(Function3<List<ResourceLocation>, ResourceLocation, Map<String, ResourceLocation>, R> function) {
-        return (textures, paletteKey, palettedPermutations) -> {
-            if (!paletteKey.getPath().contains("trim_palette")) return function.apply(textures, paletteKey, palettedPermutations);
-
-            List<ResourceLocation> newTextures = new ArrayList<>(textures.size() * 9);
-            for (ResourceLocation texture : textures) {
-                newTextures.add(texture);
-                for (int i = 0; i < 8; i++) {
-                    newTextures.add(texture.withSuffix("_" + i));
-                }
-            }
-
-            Map<String, ResourceLocation> newPermutations = new HashMap<>(palettedPermutations);
-            newPermutations.put(RuntimeTrims.DYNAMIC, ResourceLocation.withDefaultNamespace("trims/color_palettes/%s".formatted(RuntimeTrims.DYNAMIC)));
-            return function.apply(newTextures, paletteKey, newPermutations);
-        };
-    }
-
     @WrapOperation(
             method = "loadPaletteEntryFromImage",
             at = @At(

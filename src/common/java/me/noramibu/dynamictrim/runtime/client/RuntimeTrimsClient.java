@@ -10,8 +10,6 @@ import me.noramibu.dynamictrim.runtime.client.palette.TrimPalettes;
 import me.noramibu.dynamictrim.runtime.client.render.LayerData;
 import me.noramibu.dynamictrim.runtime.client.render.TrimRenderer;
 import me.noramibu.dynamictrim.runtime.client.render.adapter.DefaultTrimRendererAdapter;
-import me.noramibu.dynamictrim.runtime.client.shader.TrimShaderManager;
-import me.noramibu.dynamictrim.runtime.client.shader.adapter.DefaultTrimRenderLayerAdapter;
 import net.minecraft.world.item.equipment.trim.ArmorTrim;
 
 public final class RuntimeTrimsClient {
@@ -20,7 +18,6 @@ public final class RuntimeTrimsClient {
     private static final TrimRenderer trimRenderer = new TrimRenderer();
     private static final ItemTrimModelLoader itemModelLoader = new ItemTrimModelLoader(layerData);
     private static final ArmourTrimModelLoader armourModelLoader = new ArmourTrimModelLoader(layerData);
-    private static final TrimShaderManager shaderManager = new TrimShaderManager();
 
     public static boolean overrideExisting = false;
     public static boolean useLegacyRenderer = false;
@@ -33,11 +30,11 @@ public final class RuntimeTrimsClient {
         GroupPermutationsAtlasSource.init();
         itemModelLoader.setDefaultAdapter(new DefaultTrimModelLoaderAdapter());
         trimRenderer.setDefaultAdapter(new DefaultTrimRendererAdapter());
-        shaderManager.setDefaultAdapter(new DefaultTrimRenderLayerAdapter());
     }
 
     public static boolean isDynamic(ArmorTrim trim) {
-        return trim.material().value().itemModelIndex() == RuntimeTrims.MATERIAL_MODEL_INDEX || overrideExisting;
+        return trim.material().value().assets().base().suffix().equals(RuntimeTrims.DYNAMIC)
+                || overrideExisting;
     }
 
     public static TrimPalettes getTrimPalettes() {
@@ -60,10 +57,6 @@ public final class RuntimeTrimsClient {
      */
     public static ArmourTrimModelLoader getArmourModelLoader() {
         return armourModelLoader;
-    }
-
-    public static TrimShaderManager getShaderManager() {
-        return shaderManager;
     }
 
     public static LayerData getLayerData() {
@@ -105,6 +98,5 @@ public final class RuntimeTrimsClient {
     }
 
     public static void clearRenderLayerCache(float msBetweenCycles) {
-        getShaderManager().clearRenderLayerCaches();
     }
 }

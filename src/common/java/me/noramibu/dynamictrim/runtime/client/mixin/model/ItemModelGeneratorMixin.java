@@ -1,9 +1,10 @@
 package me.noramibu.dynamictrim.runtime.client.mixin.model;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import java.util.ArrayList;
+import java.util.List;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import java.util.ArrayList;
 import net.minecraft.client.renderer.block.model.ItemModelGenerator;
 
 @Mixin(value = ItemModelGenerator.class)
@@ -12,17 +13,18 @@ public abstract class ItemModelGeneratorMixin {
             method = "<clinit>",
             at = @At(
                     value = "INVOKE",
-                    target = "Lcom/google/common/collect/Lists;newArrayList([Ljava/lang/Object;)Ljava/util/ArrayList;",
+                    target = "Ljava/util/List;of(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/List;",
                     remap = false
             )
     )
-    private static ArrayList<String> increaseLayerCount(ArrayList<String> original) {
+    private static List<String> increaseLayerCount(List<String> original) {
+        ArrayList<String> layers = new ArrayList<>(original);
         for (int i = 5; i < 20; i++) { // should cover all possible armour / trim layers
-            if (original.contains("layer" + i)) {
+            if (layers.contains("layer" + i)) {
                 continue;
             }
-            original.add("layer" + i);
+            layers.add("layer" + i);
         }
-        return original;
+        return layers;
     }
 }

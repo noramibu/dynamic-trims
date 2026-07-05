@@ -17,14 +17,18 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.EquipmentClientInfo;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.equipment.EquipmentModel;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.equipment.EquipmentAsset;
 import net.minecraft.world.item.equipment.trim.ArmorTrim;
 import net.minecraft.world.item.equipment.trim.TrimMaterial;
 import java.util.List;
-import java.util.Map;
 
 public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
     private RenderContext context;
@@ -50,9 +54,7 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
      * @apiNote User can force the legacy renderer to be used.
      */
     public boolean useLegacyRenderer(TextureAtlasSprite sprite) {
-        boolean useLegacyRenderer = RuntimeTrimsClient.useLegacyRenderer && isSpriteDynamic(sprite); // specified to use it
-        useLegacyRenderer |= RuntimeTrimsClient.overrideExisting && !isSpriteDynamic(sprite); // overriding existing
-        return useLegacyRenderer;
+        return isSpriteDynamic(sprite) || RuntimeTrimsClient.overrideExisting;
     }
 
     public RenderType getLegacyRenderLayer(Item trimmed, ArmorTrim trim) {
@@ -92,9 +94,9 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
      * Handles overriding automatically
      * @see #renderTrim(ArmorTrim, TextureAtlasSprite, PoseStack, MultiBufferSource, int, int, int, ResourceLocation, TextureAtlas, RenderType, RenderCallback)
      */
-    public void renderTrim(ArmorTrim trim, EquipmentModel.LayerType layerType, ResourceLocation equipmentModelId, TextureAtlasSprite sprite, PoseStack matrixStack, MultiBufferSource vertexConsumers, int light, int overlay, int colour, TextureAtlas atlasTexture, RenderCallback callback) {
+    public void renderTrim(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset, TextureAtlasSprite sprite, PoseStack matrixStack, MultiBufferSource vertexConsumers, int light, int overlay, int colour, TextureAtlas atlasTexture, RenderCallback callback) {
         if (RuntimeTrimsClient.overrideExisting) {
-            renderTrim(trim, sprite, matrixStack, vertexConsumers, light, overlay, colour, getOverridenId(trim, layerType, equipmentModelId), atlasTexture, callback);
+            renderTrim(trim, sprite, matrixStack, vertexConsumers, light, overlay, colour, getOverridenId(trim, layerType, equipmentAsset), atlasTexture, callback);
         } else {
             renderTrim(trim, sprite, matrixStack, vertexConsumers, light, overlay, colour, atlasTexture, callback);
         }
@@ -124,34 +126,17 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         colour = ARGBColourHelper.withAlpha(colour, getTrimAlpha(context));
 
         if (useLegacyRenderer(sprite)) {
-            if(!(isSpriteDynamic(sprite) || RuntimeTrimsClient.overrideExisting)) {
-                callback.render(matrices, sprite.wrap(vertexConsumers.getBuffer(getLegacyRenderLayer(context.trimmed(), trim))), light, overlay, colour);
-            } else {
-                legacyRenderTrim(context, trim, matrices, vertexConsumers, light, overlay, modelId, atlasTexture, renderLayer, callback);
-            }
-        } else if (isSpriteDynamic(sprite)) {
-            shaderRenderTrim(context, trim, sprite, matrices, vertexConsumers, light, overlay, colour, renderLayer, callback);
+            legacyRenderTrim(context, trim, matrices, vertexConsumers, light, overlay, modelId, atlasTexture, renderLayer, callback);
         } else {
             callback.render(matrices, sprite.wrap(vertexConsumers.getBuffer(getLegacyRenderLayer(context.trimmed(), trim))), light, overlay, colour);
         }
-    }
-
-    public void shaderRenderTrim(RenderContext context, ArmorTrim trim, TextureAtlasSprite sprite, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay, int colour, RenderType renderLayer, RenderCallback callback) {
-        Item material = trim.material().value().ingredient().value();
-        Item trimmed = context.trimmed();
-        TrimPalette palette = RuntimeTrimsClient.getTrimPalettes().getOrGeneratePalette(material);
-        if(renderLayer == null) {
-            renderLayer = RuntimeTrimsClient.getShaderManager().getTrimRenderLayer(trimmed, palette);
-        }
-        VertexConsumer vertices = sprite.wrap(vertexConsumers.getBuffer(renderLayer));
-        getAdapter(trimmed).render(context, matrices, vertices, light, overlay, colour, callback);
     }
 
     public void legacyRenderTrim(RenderContext context, ArmorTrim trim, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay, ResourceLocation modelId, TextureAtlas atlasTexture, RenderType renderLayer, RenderCallback callback) {
         if(modelId.equals(MissingTextureAtlasSprite.getLocation())) return;
 
         TrimMaterial trimMaterial = trim.material().value();
-        Item trimItem = trimMaterial.ingredient().value();
+        Item trimItem = getTrimItem(trim);
         Item trimmed = context.trimmed();
 
         if(renderLayer == null) {
@@ -180,17 +165,16 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         if(RuntimeTrimsClient.overrideExisting) {
             assetName = RuntimeTrims.DYNAMIC;
         } else {
-            assetName = trimMaterial.assetName();
+            assetName = trimMaterial.assets().base().suffix();
         }
         return assetName;
     }
 
-    public ResourceLocation getOverridenId(ArmorTrim trim, EquipmentModel.LayerType layerType, ResourceLocation equipmentModelId) {
-        ResourceLocation modelId = getModelId(trim, layerType, equipmentModelId);
+    public ResourceLocation getOverridenId(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset) {
+        ResourceLocation modelId = getModelId(trim, layerType, equipmentAsset);
         modelId = modelId.withPath(path -> {
             TrimMaterial trimMaterial = trim.material().value();
-            Map<ResourceLocation, String> overrides = trimMaterial.overrideArmorMaterials();
-            String assetId = overrides.getOrDefault(equipmentModelId, trimMaterial.assetName());
+            String assetId = trimMaterial.assets().assetId(equipmentAsset).suffix();
             return path.replace(assetId, RuntimeTrims.DYNAMIC);
         });
         return modelId;
@@ -200,8 +184,15 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         return sprite.contents().name();
     }
 
-    public ResourceLocation getModelId(ArmorTrim trim, EquipmentModel.LayerType layerType, ResourceLocation equipmentModelId) {
-        return trim.getTexture(layerType, equipmentModelId);
+    public ResourceLocation getModelId(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset) {
+        return trim.layerAssetId(layerType.getSerializedName(), equipmentAsset);
+    }
+
+    private Item getTrimItem(ArmorTrim trim) {
+        return trim.material()
+                .unwrapKey()
+                .flatMap(key -> BuiltInRegistries.ITEM.get(key.location()).map(Holder::value))
+                .orElse(Items.AIR);
     }
 
     public interface RenderCallback {

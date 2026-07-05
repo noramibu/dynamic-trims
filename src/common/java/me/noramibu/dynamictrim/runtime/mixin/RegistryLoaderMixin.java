@@ -17,6 +17,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.KnownPack;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.equipment.trim.MaterialAssetGroup;
 import net.minecraft.world.item.equipment.trim.TrimMaterial;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -67,10 +68,7 @@ public abstract class RegistryLoaderMixin {
             for (Map.Entry<ResourceLocation, Holder<Item>> newMaterial : newMaterials.entrySet()) {
                 ResourceKey<TrimMaterial> trimRegKey = ResourceKey.create(trimMaterialRegistry.key(), newMaterial.getKey());
                 TrimMaterial itemMaterial = new TrimMaterial(
-                        RuntimeTrims.DYNAMIC,
-                        newMaterial.getValue(),
-                        RuntimeTrims.MATERIAL_MODEL_INDEX,
-                        Map.of(),
+                        MaterialAssetGroup.create(RuntimeTrims.DYNAMIC),
                         Component.translatable("dynamictrim.material", newMaterial.getValue().value().getName().getString())
                 );
                 trimMaterialRegistry.register(trimRegKey, itemMaterial, info);

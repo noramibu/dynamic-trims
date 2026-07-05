@@ -11,10 +11,12 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.layers.EquipmentLayerRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.EquipmentModelSet;
+import net.minecraft.client.resources.model.EquipmentAssetManager;
+import net.minecraft.client.resources.model.EquipmentClientInfo;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.equipment.EquipmentModel;
+import net.minecraft.world.item.equipment.EquipmentAsset;
 import net.minecraft.world.item.equipment.trim.ArmorTrim;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -31,12 +33,12 @@ public abstract class ArmorFeatureRendererMixin {
             method = "<init>",
             at = @At("TAIL")
     )
-    private void captureAtlas(EquipmentModelSet equipmentModels, TextureAtlas armorTrimAtlas, CallbackInfo ci) {
+    private void captureAtlas(EquipmentAssetManager equipmentAssets, TextureAtlas armorTrimAtlas, CallbackInfo ci) {
         dynamictrim$armorTrimAtlas = armorTrimAtlas;
     }
 
     @WrapOperation(
-            method = "renderLayers(Lnet/minecraft/world/item/equipment/EquipmentModel$LayerType;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/client/model/Model;Lnet/minecraft/world/item/ItemStack;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/resources/ResourceLocation;)V",
+            method = "renderLayers(Lnet/minecraft/client/resources/model/EquipmentClientInfo$LayerType;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/client/model/Model;Lnet/minecraft/world/item/ItemStack;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/resources/ResourceLocation;)V",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/model/Model;renderToBuffer(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;II)V"
@@ -49,8 +51,8 @@ public abstract class ArmorFeatureRendererMixin {
             int light,
             int overlay,
             Operation<Void> original,
-            @Local(argsOnly = true) EquipmentModel.LayerType layerType,
-            @Local(argsOnly = true, ordinal = 0) ResourceLocation equipmentModelId,
+            @Local(argsOnly = true) EquipmentClientInfo.LayerType layerType,
+            @Local(argsOnly = true) ResourceKey<EquipmentAsset> equipmentAsset,
             @Local(argsOnly = true) ItemStack stack,
             @Local(argsOnly = true) MultiBufferSource vertexConsumers,
             @Local ArmorTrim trim,
@@ -59,7 +61,7 @@ public abstract class ArmorFeatureRendererMixin {
         RuntimeTrimsClient.getTrimRenderer().renderTrim(
                 trim,
                 layerType,
-                equipmentModelId,
+                equipmentAsset,
                 sprite,
                 matrixStack,
                 vertexConsumers,
