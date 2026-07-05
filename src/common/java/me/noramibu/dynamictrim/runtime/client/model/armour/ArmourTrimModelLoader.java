@@ -1,7 +1,6 @@
 package me.noramibu.dynamictrim.runtime.client.model.armour;
 
-import me.noramibu.dynamictrim.runtime.RuntimeTrims;
-import me.noramibu.dynamictrim.runtime.client.RuntimeTrimsClient;
+import me.noramibu.dynamictrim.DynamicTrim;
 import me.noramibu.dynamictrim.runtime.client.debug.Debugger;
 import me.noramibu.dynamictrim.runtime.client.render.LayerData;
 import it.unimi.dsi.fastutil.Pair;
@@ -58,13 +57,10 @@ public final class ArmourTrimModelLoader {
             newPermutations.addAll(permutations);
         } else {
             for (Map.Entry<String, Supplier<IntUnaryOperator>> entry : permutations) {
-                if (entry.getKey().equals(RuntimeTrims.DYNAMIC)) {
+                if (entry.getKey().equals(DynamicTrim.DYNAMIC)) {
                     newPermutations.add(entry);
                 }
             }
-        }
-        if(RuntimeTrimsClient.overrideExisting) {
-            newPermutations.removeIf(entry -> !entry.getKey().equals(RuntimeTrims.DYNAMIC));
         }
         return newPermutations;
     }

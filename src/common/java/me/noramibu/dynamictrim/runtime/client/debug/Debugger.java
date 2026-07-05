@@ -1,6 +1,6 @@
 package me.noramibu.dynamictrim.runtime.client.debug;
 
-import me.noramibu.dynamictrim.runtime.RuntimeTrims;
+import me.noramibu.dynamictrim.DynamicTrim;
 import me.noramibu.dynamictrim.runtime.client.RuntimeTrimsClient;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -32,7 +32,7 @@ public final class Debugger {
             file.createNewFile();
             ImageIO.write(image, "png", file);
         } catch (IOException e) {
-            RuntimeTrims.LOGGER.error("Could not create debug file", e);
+            DynamicTrim.LOGGER.error("Could not create debug file", e);
         }
     }
 
@@ -56,7 +56,7 @@ public final class Debugger {
                 GSON.toJson(jsonElement, fileWriter);
             }
         } catch (IOException e) {
-            RuntimeTrims.LOGGER.error("Could not create debug file", e);
+            DynamicTrim.LOGGER.error("Could not create debug file", e);
         }
     }
 }

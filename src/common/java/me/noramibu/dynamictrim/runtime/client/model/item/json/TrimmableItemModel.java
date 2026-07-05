@@ -2,13 +2,9 @@ package me.noramibu.dynamictrim.runtime.client.model.item.json;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import java.util.ArrayList;
-import java.util.List;
-import net.minecraft.resources.Identifier;
 
 public final class TrimmableItemModel {
     public String parent;
-    public List<ModelOverride> overrides;
     public TextureLayers textures;
 
     public String credit;
@@ -17,68 +13,15 @@ public final class TrimmableItemModel {
     public String guiLight;
     public JsonArray elements;
 
-    private TrimmableItemModel(String parent, List<ModelOverride> overrides, TextureLayers textures) {
-        this.parent = parent;
-        this.overrides = overrides;
-        this.textures = textures;
-    }
-
-    public boolean isComplex() {
-        return display != null || guiLight != null || elements != null;
-    }
-
-    public void addOverride(ModelOverride override) {
-        if (overrides == null) {
-            overrides = new ArrayList<>();
-        }
-
-        overrides.add(override);
-    }
-
     public TrimmableItemModel copy() {
-        TrimmableItemModel newModel = new TrimmableItemModel(parent, overrides, textures);
+        TrimmableItemModel newModel = new TrimmableItemModel();
+        newModel.parent = parent;
+        newModel.textures = textures;
         newModel.credit = credit;
         newModel.textureSize = textureSize;
         newModel.display = display;
+        newModel.guiLight = guiLight;
         newModel.elements = elements;
         return newModel;
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-        private String parent;
-        private List<ModelOverride> overrides = new ArrayList<>();
-        private TextureLayers textures;
-
-        public Builder parent(String parent) {
-            this.parent = parent;
-            return this;
-        }
-
-        public Builder parent(Identifier identifier) {
-            return parent(identifier.toString());
-        }
-
-        public Builder override(ModelOverride override) {
-            this.overrides.add(override);
-            return this;
-        }
-
-        public Builder overrides(List<ModelOverride> overrides) {
-            this.overrides = overrides;
-            return this;
-        }
-
-        public Builder textures(TextureLayers textures) {
-            this.textures = textures;
-            return this;
-        }
-
-        public TrimmableItemModel build() {
-            return new TrimmableItemModel(parent, overrides, textures);
-        }
     }
 }

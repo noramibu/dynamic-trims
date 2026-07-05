@@ -1,6 +1,6 @@
 package me.noramibu.dynamictrim.runtime.client.mixin.model;
 
-import me.noramibu.dynamictrim.runtime.RuntimeTrims;
+import me.noramibu.dynamictrim.DynamicTrim;
 import me.noramibu.dynamictrim.runtime.client.RuntimeTrimsClient;
 import me.noramibu.dynamictrim.runtime.client.palette.TrimPalette;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
@@ -46,7 +46,7 @@ public abstract class PalettedPermutationsAtlasSourceMixin {
     private static Optional<Resource> addDynamicPaletteImage(ResourceManager instance, Identifier identifier, Operation<Optional<Resource>> original) {
         Optional<Resource> existing = original.call(instance, identifier);
         if (existing.isPresent()) return existing;
-        if (!identifier.equals(Identifier.withDefaultNamespace("textures/trims/color_palettes/%s.png".formatted(RuntimeTrims.DYNAMIC)))) return existing;
+        if (!identifier.equals(Identifier.withDefaultNamespace("textures/trims/color_palettes/%s.png".formatted(DynamicTrim.DYNAMIC)))) return existing;
 
         PackResources defaultPack = Minecraft.getInstance().getVanillaPackResources();
         Resource dynamicResource = runtimetrims$createGradientTrimPaletteResource(defaultPack);

@@ -1,11 +1,8 @@
 package me.noramibu.dynamictrim.runtime.client.palette;
 
 import me.noramibu.dynamictrim.runtime.client.debug.Debugger;
-import org.jetbrains.annotations.Nullable;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
 
@@ -19,23 +16,6 @@ public final class TrimPalettes {
             createDebugFile(k, newPalette);
             return newPalette;
         });
-    }
-
-    public @Nullable TrimPalette getPalette(Item item) {
-        return cache.get(item);
-    }
-
-    public void forEach(Consumer<TrimPalette> consumer) {
-        cache.values().forEach(consumer);
-    }
-
-    public void regenerate() {
-        Set<Item> cached = cache.keySet();
-        for (Item item : cached) {
-            TrimPalette palette = generator.generatePalette(item);
-            createDebugFile(item, palette);
-            cache.put(item, palette);
-        }
     }
 
     private void createDebugFile(Item item, TrimPalette palette) {

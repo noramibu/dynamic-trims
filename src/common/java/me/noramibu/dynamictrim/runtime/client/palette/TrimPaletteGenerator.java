@@ -1,7 +1,6 @@
 package me.noramibu.dynamictrim.runtime.client.palette;
 
-import me.noramibu.dynamictrim.runtime.RuntimeTrims;
-import me.noramibu.dynamictrim.runtime.client.RuntimeTrimsClient;
+import me.noramibu.dynamictrim.DynamicTrim;
 import me.noramibu.dynamictrim.runtime.client.colour.ColourHSB;
 import me.noramibu.dynamictrim.runtime.client.colour.OkLabHelper;
 import me.noramibu.dynamictrim.runtime.client.mixin.accessor.SpriteContentsAccessor;
@@ -14,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
@@ -38,11 +38,17 @@ public final class TrimPaletteGenerator {
                 player,
                 player.getId()
         );
-        List<Integer> colours = getColoursFromSprite(renderState.pickParticleIcon(RandomSource.create()));
+        Material.Baked particle = renderState.pickParticleMaterial(RandomSource.create());
+        if (particle == null) {
+            DynamicTrim.LOGGER.warn("Could not generate palette for {}", item.getName(stack).getString());
+            return TrimPalette.DEFAULT;
+        }
+
+        List<Integer> colours = getColoursFromSprite(particle.sprite());
 
         List<Integer> vibrantPalette = generateVibrantPalette(colours);
         if(vibrantPalette.isEmpty()) {
-            RuntimeTrims.LOGGER.warn("Could not generate palette for {}", item.getName().getString());
+            DynamicTrim.LOGGER.warn("Could not generate palette for {}", item.getName(stack).getString());
             return TrimPalette.DEFAULT;
         }
 
@@ -74,23 +80,10 @@ public final class TrimPaletteGenerator {
     }
 
     private List<Integer> sortPalette(List<Integer> colours) {
-        List<ColourHSB> toSort = ColourHSB.fromRGB(colours);
-        RuntimeTrimsClient.PaletteSorting paletteSorting = RuntimeTrimsClient.paletteSorting;
-        Comparator<ColourHSB> comparator = Comparator.comparing(colourHSB -> {
-            if(paletteSorting.isBrightness()) {
-                return colourHSB.brightness();
-            } else if (paletteSorting.isSaturation()) {
-                return colourHSB.saturation();
-            } else if (paletteSorting.isColour()) {
-                return (float) colourHSB.colour();
-            }
-            return 0f;
-        });
-        if(!paletteSorting.isReversed()) { // match vanilla's direction of lightest -> darkest and avoid unneccessary double reversal
-            comparator = comparator.reversed();
-        }
-        toSort.sort(comparator);
-        return toSort.stream().map(ColourHSB::colour).toList();
+        return ColourHSB.fromRGB(colours).stream()
+                .sorted(Comparator.comparing(ColourHSB::colour).reversed())
+                .map(ColourHSB::colour)
+                .toList();
     }
 
     /**

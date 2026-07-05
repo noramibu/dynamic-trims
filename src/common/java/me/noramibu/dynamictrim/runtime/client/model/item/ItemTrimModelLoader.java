@@ -3,26 +3,26 @@ package me.noramibu.dynamictrim.runtime.client.model.item;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import me.noramibu.dynamictrim.DynamicTrim;
 import me.noramibu.dynamictrim.client.TrimPatternProperty;
-import me.noramibu.dynamictrim.client.adapters.DynamicTrimsTrimModelLoaderAdapter;
-import me.noramibu.dynamictrim.runtime.RuntimeTrims;
 import me.noramibu.dynamictrim.runtime.client.debug.Debugger;
-import me.noramibu.dynamictrim.runtime.client.model.item.adapter.TrimModelLoaderAdapter;
 import me.noramibu.dynamictrim.runtime.client.model.item.json.BlockAtlas;
 import me.noramibu.dynamictrim.runtime.client.model.item.json.TextureLayers;
 import me.noramibu.dynamictrim.runtime.client.model.item.json.TrimmableItemModel;
 import me.noramibu.dynamictrim.runtime.client.render.LayerData;
-import me.noramibu.dynamictrim.runtime.util.ItemAdaptable;
 import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiConsumer;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.core.Holder;
@@ -31,19 +31,23 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.SmithingTemplateItem;
+import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.item.equipment.Equippable;
 
-public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdapter> {
+public final class ItemTrimModelLoader {
     private static final Pattern itemDefinitionIdPattern = Pattern.compile("^items/(.+)?(?=.json).json$");
     private static final String MODEL_RESOURCE_PREFIX = "models/";
     private static final String MODEL_RESOURCE_SUFFIX = ".json";
     private static final String TRIM_MODEL_SUFFIX = "_trim.json";
-    private final JsonParser jsonParser;
+    private static final String TRIM_TEMPLATE_SUFFIX = "_armor_trim_smithing_template";
+    private final JsonParser jsonParser = new JsonParser();
     private final LayerData layerData;
+    private Set<Identifier> templatePatternIds;
 
     public ItemTrimModelLoader(LayerData layerData) {
         this.layerData = layerData;
-        this.jsonParser = new JsonParser();
     }
 
     public Map<Identifier, Resource> loadModels(Map<Identifier, Resource> loadedModels) {
@@ -76,9 +80,11 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
 
     public Map<Identifier, Resource> loadItemDefinitions(Map<Identifier, Resource> loadedDefinitions) {
         Map<Identifier, Resource> extendedDefinitions = new HashMap<>(loadedDefinitions);
+        Map<String, DefinitionTemplate> templatesByEquipmentType = new HashMap<>();
+        Set<Identifier> processedDefinitions = new HashSet<>();
         for (Map.Entry<Identifier, Resource> entry : loadedDefinitions.entrySet()) {
             Item item = getItemFromDefinitionResource(entry.getKey());
-            if (item == null || !getAdapter(item).canTrim(item)) {
+            if (item == null || !canTrim(item)) {
                 continue;
             }
 
@@ -120,13 +126,120 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
 
             Resource resource = jsonParser.toResource(entry.getValue().source(), itemDefinition);
             extendedDefinitions.put(entry.getKey(), resource);
+            processedDefinitions.add(entry.getKey());
+            addTemplate(templatesByEquipmentType, item, equipmentType, itemDefinition, resource);
             Debugger.createJson("resources/%s".formatted(entry.getKey()), resource);
         }
+        addMissingItemDefinitions(extendedDefinitions, processedDefinitions, templatesByEquipmentType);
         return extendedDefinitions;
     }
 
-    public void loadModels(Identifier id, Resource resource, BiConsumer<Identifier, Resource> loadedModelConsumer) {
-        loadModels(Map.of(id, resource)).forEach(loadedModelConsumer);
+    private void addTemplate(
+            Map<String, DefinitionTemplate> templatesByEquipmentType,
+            Item item,
+            String equipmentType,
+            JsonObject definition,
+            Resource resource) {
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+        DefinitionTemplate existing = templatesByEquipmentType.get(equipmentType);
+        boolean leather = itemId.getPath().startsWith("leather_");
+        if (existing != null && (!existing.leather() || leather)) {
+            return;
+        }
+        templatesByEquipmentType.put(equipmentType, new DefinitionTemplate(
+                definition.deepCopy(),
+                resource,
+                "%s:item/%s".formatted(itemId.getNamespace(), itemId.getPath()),
+                leather
+        ));
+    }
+
+    private void addMissingItemDefinitions(
+            Map<Identifier, Resource> definitions,
+            Set<Identifier> processedDefinitions,
+        Map<String, DefinitionTemplate> templatesByEquipmentType) {
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (!canTrim(item)) {
+                continue;
+            }
+
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+            if (!itemId.getNamespace().equals("minecraft")) {
+                continue;
+            }
+
+            Identifier resourceId = Identifier.fromNamespaceAndPath(
+                    itemId.getNamespace(),
+                    "items/%s.json".formatted(itemId.getPath())
+            );
+            if (processedDefinitions.contains(resourceId)) {
+                continue;
+            }
+
+            String equipmentType = getEquipmentType(item);
+            DefinitionTemplate template = templatesByEquipmentType.get(equipmentType);
+            if (template == null) {
+                continue;
+            }
+
+            JsonObject definition = template.definition().deepCopy();
+            replaceStringValues(
+                    definition,
+                    template.modelPrefix(),
+                    "%s:item/%s".formatted(itemId.getNamespace(), itemId.getPath())
+            );
+            if (itemId.getPath().startsWith("leather_")) {
+                addLeatherDyeTints(definition);
+            }
+
+            Resource resource = jsonParser.toResource(template.resource().source(), definition);
+            definitions.put(resourceId, resource);
+            Debugger.createJson("resources/%s".formatted(resourceId), resource);
+        }
+    }
+
+    private void replaceStringValues(JsonElement element, String from, String to) {
+        if (element.isJsonObject()) {
+            for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
+                JsonElement value = entry.getValue();
+                if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                    entry.setValue(new JsonPrimitive(value.getAsString().replace(from, to)));
+                } else {
+                    replaceStringValues(value, from, to);
+                }
+            }
+        } else if (element.isJsonArray()) {
+            JsonArray array = element.getAsJsonArray();
+            for (int i = 0; i < array.size(); i++) {
+                JsonElement value = array.get(i);
+                if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                    array.set(i, new JsonPrimitive(value.getAsString().replace(from, to)));
+                } else {
+                    replaceStringValues(value, from, to);
+                }
+            }
+        }
+    }
+
+    private void addLeatherDyeTints(JsonElement element) {
+        if (element.isJsonObject()) {
+            JsonObject object = element.getAsJsonObject();
+            if (isModelObject(object) && !object.has("tints")) {
+                JsonObject tint = new JsonObject();
+                tint.addProperty("type", "minecraft:dye");
+                tint.addProperty("default", DyedItemColor.LEATHER_COLOR);
+                JsonArray tints = new JsonArray();
+                tints.add(tint);
+                object.add("tints", tints);
+            }
+            object.entrySet().forEach(entry -> addLeatherDyeTints(entry.getValue()));
+        } else if (element.isJsonArray()) {
+            element.getAsJsonArray().forEach(this::addLeatherDyeTints);
+        }
+    }
+
+    private boolean isModelObject(JsonObject object) {
+        return object.has("type") && object.get("type").getAsString().equals("minecraft:model");
     }
 
     private Map<Identifier, TrimmableItemModel> createPatternModels(
@@ -134,10 +247,9 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
             TrimmableItemModel baseModel) {
         Map<Identifier, TrimmableItemModel> patternModels = new HashMap<>();
         int trimStartLayer = getTrimStartLayer(baseModel.textures);
-        layerData.setTrimStartLayer(trimModelResource.item(), trimStartLayer);
 
-        for (Identifier patternId : DynamicTrimsTrimModelLoaderAdapter.TEMPLATE_PATTERN_INDEX_SUPPLIER.get().keySet()) {
-            if (!DynamicTrimsTrimModelLoaderAdapter.hasItemTexture(
+        for (Identifier patternId : getTemplatePatternIds()) {
+            if (!hasItemTexture(
                     trimModelResource.equipmentType(),
                     patternId
             )) {
@@ -176,8 +288,8 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
     }
 
     private List<String> getPatternLayerNames(TrimModelResource trimModelResource, Identifier patternId) {
-        String textureName = DynamicTrimsTrimModelLoaderAdapter.getPatternTextureName(patternId);
-        if (!trimModelResource.trimType().equals(RuntimeTrims.DYNAMIC)) {
+        String textureName = getPatternTextureName(patternId);
+        if (!trimModelResource.trimType().equals(DynamicTrim.DYNAMIC)) {
             return List.of("minecraft:trims/items/%s/%s_%s".formatted(
                     trimModelResource.equipmentType(),
                     textureName,
@@ -193,7 +305,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
             return List.of("minecraft:trims/items/%s/%s_%s".formatted(
                     trimModelResource.equipmentType(),
                     textureName,
-                    RuntimeTrims.DYNAMIC
+                    DynamicTrim.DYNAMIC
             ));
         }
 
@@ -203,7 +315,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
                     trimModelResource.equipmentType(),
                     textureName,
                     i,
-                    RuntimeTrims.DYNAMIC
+                    DynamicTrim.DYNAMIC
             ));
         }
         return layers;
@@ -214,8 +326,8 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
             String baseModelId,
             String equipmentType) {
         JsonArray cases = new JsonArray();
-        for (Identifier patternId : DynamicTrimsTrimModelLoaderAdapter.TEMPLATE_PATTERN_INDEX_SUPPLIER.get().keySet()) {
-            if (!DynamicTrimsTrimModelLoaderAdapter.hasItemTexture(equipmentType, patternId)) {
+        for (Identifier patternId : getTemplatePatternIds()) {
+            if (!hasItemTexture(equipmentType, patternId)) {
                 continue;
             }
 
@@ -245,7 +357,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
 
     private Identifier getPatternModelId(Identifier baseModelId, Identifier patternId) {
         return baseModelId.withSuffix(
-                "-" + DynamicTrimsTrimModelLoaderAdapter.getPatternTextureName(patternId)
+                "-" + getPatternTextureName(patternId)
         );
     }
 
@@ -280,6 +392,88 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
         return Integer.parseInt(layerKey.substring("layer".length()));
     }
 
+    private Set<Identifier> getTemplatePatternIds() {
+        if (templatePatternIds == null) {
+            templatePatternIds = BuiltInRegistries.ITEM.stream()
+                    .filter(item -> item instanceof SmithingTemplateItem)
+                    .map(this::getPatternAssetId)
+                    .filter(patternId -> patternId != null)
+                    .sorted(Comparator.comparing(Identifier::toString))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+        return templatePatternIds;
+    }
+
+    private boolean hasItemTexture(String equipmentType, Identifier patternId) {
+        String path = "assets/minecraft/textures/trims/items/%s/%s.png".formatted(
+                equipmentType,
+                getPatternTextureName(patternId)
+        );
+        return ItemTrimModelLoader.class.getClassLoader().getResource(path) != null;
+    }
+
+    private String getPatternTextureName(Identifier patternId) {
+        return patternId.toString().replace(":", "-");
+    }
+
+    private Identifier getPatternAssetId(Item item) {
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+        String itemPath = itemId.getPath();
+        if (!itemPath.endsWith(TRIM_TEMPLATE_SUFFIX)) {
+            return null;
+        }
+        return Identifier.fromNamespaceAndPath(
+                itemId.getNamespace(),
+                itemPath.substring(0, itemPath.length() - TRIM_TEMPLATE_SUFFIX.length()));
+    }
+
+    private boolean canTrim(Item item) {
+        if (item == Items.ELYTRA) {
+            return false;
+        }
+
+        Equippable equipment = getEquippable(item);
+        return equipment != null ? equipment.slot().isArmor() : getEquipmentType(item) != null;
+    }
+
+    private Equippable getEquippable(Item item) {
+        if (!BuiltInRegistries.ITEM.wrapAsHolder(item).areComponentsBound()) {
+            return null;
+        }
+
+        return item.components().get(DataComponents.EQUIPPABLE);
+    }
+
+    private String getEquipmentType(Item item) {
+        Equippable equipment = getEquippable(item);
+        if (equipment != null) {
+            return getEquipmentType(equipment);
+        }
+
+        String itemPath = BuiltInRegistries.ITEM.getKey(item).getPath();
+        if (itemPath.endsWith("_helmet")) {
+            return "helmet";
+        } else if (itemPath.endsWith("_chestplate")) {
+            return "chestplate";
+        } else if (itemPath.endsWith("_leggings")) {
+            return "leggings";
+        } else if (itemPath.endsWith("_boots")) {
+            return "boots";
+        }
+
+        return null;
+    }
+
+    private String getEquipmentType(Equippable equipment) {
+        return switch (equipment.slot()) {
+            case HEAD -> "helmet";
+            case CHEST -> "chestplate";
+            case LEGS -> "leggings";
+            case FEET -> "boots";
+            default -> null;
+        };
+    }
+
     private Item getItemFromDefinitionResource(Identifier resourceId) {
         Matcher matcher = itemDefinitionIdPattern.matcher(resourceId.getPath());
         if (!matcher.matches()) {
@@ -301,7 +495,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
 
         for (Item item : BuiltInRegistries.ITEM) {
             Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
-            if (!itemId.getNamespace().equals(resourceId.getNamespace()) || !getAdapter(item).canTrim(item)) {
+            if (!itemId.getNamespace().equals(resourceId.getNamespace()) || !canTrim(item)) {
                 continue;
             }
 
@@ -317,7 +511,6 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
             }
 
             return new TrimModelResource(
-                    item,
                     equipmentType,
                     trimType,
                     resourceId.withPath(modelPath -> modelPath.substring(
@@ -330,22 +523,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
         return null;
     }
 
-    private String getEquipmentType(Item item) {
-        Equippable equipment = item.components().get(DataComponents.EQUIPPABLE);
-        if (equipment == null) {
-            return null;
-        }
-
-        return switch (equipment.slot()) {
-            case HEAD -> "helmet";
-            case CHEST -> "chestplate";
-            case LEGS -> "leggings";
-            case FEET -> "boots";
-            default -> null;
-        };
-    }
-
-    public BufferedReader addGroupPermutationsToAtlasSources(BufferedReader original) {
+    public BufferedReader addGroupPermutationsToAtlasSources(BufferedReader original, List<String> directories) {
         JsonObject atlasJson = jsonParser.fromReader(original, JsonObject.class);
         BlockAtlas atlas = jsonParser.fromJson(atlasJson, BlockAtlas.class);
         Optional<BlockAtlas.Source> palettedPermuationsSource = atlas.getPalettedPermutationsSource("trims/color_palettes/trim_palette");
@@ -356,20 +534,21 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
         atlas.addSource(palettedPermuationsSource.get()
                 .copy()
                 .withType(DynamicTrim.id("group_permutations").toString())
-                .withDirectories(List.of(
-                        "trims/items/helmet",
-                        "trims/items/chestplate",
-                        "trims/items/leggings",
-                        "trims/items/boots"
-                ))
+                .withDirectories(directories)
                 .withTextures(null)
         );
 
         return jsonParser.toReader(atlas);
     }
 
+    private record DefinitionTemplate(
+            JsonObject definition,
+            Resource resource,
+            String modelPrefix,
+            boolean leather) {
+    }
+
     private record TrimModelResource(
-            Item item,
             String equipmentType,
             String trimType,
             Identifier modelId,

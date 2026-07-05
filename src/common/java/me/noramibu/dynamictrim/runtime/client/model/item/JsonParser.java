@@ -31,10 +31,6 @@ public final class JsonParser {
         }
     }
 
-    public <T> T fromString(String json, Class<T> clazz) {
-        return GSON.fromJson(json, clazz);
-    }
-
     public <T> T fromReader(Reader original, Class<T> clazz) {
         return GSON.fromJson(original, clazz);
     }
@@ -47,15 +43,7 @@ public final class JsonParser {
         return new Resource(resourcePack, () -> IOUtils.toInputStream(GSON.toJson(object), StandardCharsets.UTF_8));
     }
 
-    public String toJson(Object object) {
-        return GSON.toJson(object);
-    }
-
-    public JsonObject toJsonObject(Object object) {
-        return GSON.toJsonTree(object).getAsJsonObject();
-    }
-
     public BufferedReader toReader(Object object) {
-        return new BufferedReader(new StringReader(toJson(object)));
+        return new BufferedReader(new StringReader(GSON.toJson(object)));
     }
 }

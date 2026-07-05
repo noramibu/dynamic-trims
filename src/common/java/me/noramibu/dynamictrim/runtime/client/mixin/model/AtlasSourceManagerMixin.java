@@ -1,6 +1,6 @@
 package me.noramibu.dynamictrim.runtime.client.mixin.model;
 
-import me.noramibu.dynamictrim.runtime.RuntimeTrims;
+import me.noramibu.dynamictrim.DynamicTrim;
 import me.noramibu.dynamictrim.runtime.client.model.item.GroupPermutationsAtlasSource;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.client.renderer.texture.atlas.SpriteSource;
@@ -24,6 +24,6 @@ public abstract class AtlasSourceManagerMixin {
             at = @At("TAIL")
     )
     private static void addGroupPermutations(CallbackInfo ci) {
-        ID_MAPPER.put(RuntimeTrims.id("group_permutations"), GroupPermutationsAtlasSource.CODEC);
+        ID_MAPPER.put(DynamicTrim.id("group_permutations"), GroupPermutationsAtlasSource.CODEC);
     }
 }

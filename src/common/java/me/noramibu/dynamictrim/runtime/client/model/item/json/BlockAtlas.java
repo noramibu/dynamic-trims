@@ -1,5 +1,6 @@
 package me.noramibu.dynamictrim.runtime.client.model.item.json;
 
+import com.google.gson.JsonElement;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +30,7 @@ public final class BlockAtlas {
         public String source;
         public String prefix;
         public String resource;
-        public List<String> textures;
+        public JsonElement textures;
         public List<String> directories;
         public String paletteKey;
         public Map<String, String> permutations;
@@ -54,7 +55,7 @@ public final class BlockAtlas {
             return this;
         }
 
-        public Source withTextures(List<String> textures) {
+        public Source withTextures(JsonElement textures) {
             this.textures = textures;
             return this;
         }

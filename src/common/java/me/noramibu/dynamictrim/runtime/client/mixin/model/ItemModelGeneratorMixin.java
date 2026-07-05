@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import net.minecraft.client.renderer.block.model.ItemModelGenerator;
+import net.minecraft.client.resources.model.cuboid.ItemModelGenerator;
 
 @Mixin(value = ItemModelGenerator.class)
 public abstract class ItemModelGeneratorMixin {

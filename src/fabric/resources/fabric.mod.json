@@ -26,7 +26,6 @@
     ]
   },
   "mixins": [
-    "dynamictrim.mixins.json",
     {
       "config": "dynamictrim-client.mixins.json",
       "environment": "client"
@@ -37,8 +36,8 @@
     }
   ],
   "depends": {
-    "fabricloader": ">=0.16.0",
+    "fabricloader": ">=${loader_version}",
     "minecraft": "${minecraft_dependency}",
-    "java": ">=21"
+    "java": ">=${java_version}"
   }
 }

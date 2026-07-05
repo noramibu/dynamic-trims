@@ -18,9 +18,6 @@ logoFile = "assets/dynamictrim/icon.png"
 discord = "https://discord.gg/FaxbR9eEFW"
 
 [[mixins]]
-config = "dynamictrim.mixins.json"
-
-[[mixins]]
 config = "dynamictrim-client.mixins.json"
 
 [[mixins]]

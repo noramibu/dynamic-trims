@@ -1,21 +1,21 @@
 @file:Suppress("UnstableApiUsage")
 
 import org.gradle.api.tasks.compile.JavaCompile
-import net.fabricmc.loom.api.LoomGradleExtensionAPI
-import net.fabricmc.loom.task.RemapJarTask
-
-plugins {
-    java
-    id("dev.architectury.loom") version "1.17.487" apply false
-    id("architectury-plugin") version "3.5.169" apply false
-}
+import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.Delete
+import org.gradle.api.plugins.BasePluginExtension
+import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.jvm.tasks.Jar
+import org.gradle.language.jvm.tasks.ProcessResources
 
 val minecraftVersion = property("minecraft_version").toString()
-val javaVersion = 21
+val minecraftLine = property("minecraft_line").toString()
+val javaVersion = property("java_version").toString().toInt()
 val buildNumber = property("build_number").toString()
 val modArtifactName = property("mod_artifact_name").toString()
 val modDescription = property("mod_description").toString()
-val modMetadataVersion = "$minecraftVersion-build.$buildNumber"
+val modMetadataVersion = "$minecraftLine-build.$buildNumber"
 
 allprojects {
     group = property("mod_group").toString()
@@ -32,63 +32,19 @@ subprojects {
     val loader = name
     val loaderVersion = property("${loader}_loader").toString()
     val loaderMetadataVersion = findProperty("${loader}_loader_dependency")?.toString() ?: loaderVersion
-    val awName = "$minecraftVersion.accesswidener"
-
-    layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(loader))
-    extra["loom.platform"] = loader
 
     apply(plugin = "java")
-    apply(plugin = "dev.architectury.loom")
-    apply(plugin = "architectury-plugin")
 
-    version = "$minecraftVersion-$loader-build-$buildNumber"
-    base.archivesName.set(modArtifactName)
-
-    sourceSets {
-        main {
-            java.setSrcDirs(
-                listOf(
-                    rootProject.file("src/common/java"),
-                    rootProject.file("src/$loader/java")
-                )
-            )
-            resources.setSrcDirs(
-                listOf(
-                    rootProject.file("src/common/resources"),
-                    rootProject.file("src/$loader/resources")
-                )
-            )
-        }
+    version = "$minecraftLine-$loader-build-$buildNumber"
+    layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(loader))
+    extensions.configure<BasePluginExtension> {
+        archivesName.set(modArtifactName)
     }
 
-    dependencies {
-        "minecraft"("com.mojang:minecraft:$minecraftVersion")
-    }
-
-    extensions.configure<LoomGradleExtensionAPI> {
-        accessWidenerPath.set(rootProject.file("src/common/resources/$awName"))
-
-        runConfigs.all {
-            ideConfigGenerated(true)
-            runDir = "../../run/$loader"
-        }
-
-        runConfigs["server"].apply {
-            programArgs("nogui")
-        }
-    }
-
-    dependencies {
-        if (loader == "fabric") {
-            "mappings"(project.extensions.getByType<LoomGradleExtensionAPI>().officialMojangMappings())
-            "modImplementation"("net.fabricmc:fabric-loader:$loaderVersion")
-        }
-
-        if (loader == "neoforge") {
-            "mappings"(project.extensions.getByType<LoomGradleExtensionAPI>().officialMojangMappings())
-            "neoForge"("net.neoforged:neoforge:$loaderVersion")
-            "forgeRuntimeLibrary"("io.github.juuxel:unprotect:2.0.2")
-            "forgeRuntimeLibrary"("io.github.juuxel:unprotect-modlauncher:2.0.2")
+    extensions.configure<SourceSetContainer> {
+        named("main") {
+            java.setSrcDirs(listOf(rootProject.file("src/common/java"), rootProject.file("src/$loader/java")))
+            resources.setSrcDirs(listOf(rootProject.file("src/common/resources"), rootProject.file("src/$loader/resources")))
         }
     }
 
@@ -97,12 +53,14 @@ subprojects {
             options.release.set(javaVersion)
         }
 
-        processResources {
+        named<ProcessResources>("processResources") {
             val modMetadata = mapOf(
                 "description" to modDescription,
                 "version" to modMetadataVersion,
                 "minecraft_dependency" to rootProject.property("${loader}_minecraft_dependency").toString(),
                 "minecraft_version" to minecraftVersion,
+                "minecraft_line" to minecraftLine,
+                "java_version" to javaVersion.toString(),
                 "loader_version" to loaderMetadataVersion
             )
 
@@ -115,29 +73,26 @@ subprojects {
             duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         }
 
-        clean {
-            delete(layout.buildDirectory)
+        named<Jar>("jar") {
+            archiveBaseName.set(modArtifactName)
         }
 
-        if (loader == "neoforge") {
-            named<RemapJarTask>("remapJar") {
-                atAccessWideners.add(awName)
-            }
+        named<Delete>("clean") {
+            delete(layout.buildDirectory)
         }
 
         register<Copy>("buildAndCollect") {
             group = "build"
-            from(named<RemapJarTask>("remapJar").flatMap { it.archiveFile })
-            into(rootProject.layout.buildDirectory.file("libs/$modMetadataVersion"))
+            from(named<Jar>("jar").flatMap { it.archiveFile })
+            into(rootProject.layout.buildDirectory.dir("libs/$modMetadataVersion"))
             dependsOn("build")
         }
     }
 
-    java {
+    extensions.configure<JavaPluginExtension> {
         withSourcesJar()
 
         sourceCompatibility = JavaVersion.toVersion(javaVersion)
         targetCompatibility = JavaVersion.toVersion(javaVersion)
     }
-
 }

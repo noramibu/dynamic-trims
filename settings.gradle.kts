@@ -1,11 +1,14 @@
 pluginManagement {
     repositories {
         maven("https://maven.fabricmc.net/")
-        maven("https://maven.architectury.dev")
-        maven("https://maven.minecraftforge.net/")
         maven("https://maven.neoforged.net/releases/")
-        mavenCentral()
         gradlePluginPortal()
+        mavenCentral()
+    }
+
+    plugins {
+        id("net.fabricmc.fabric-loom") version "1.17.13"
+        id("net.neoforged.moddev") version "2.0.141"
     }
 }
 

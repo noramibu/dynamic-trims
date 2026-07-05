@@ -2,6 +2,7 @@ package me.noramibu.dynamictrim.runtime.client.mixin.model;
 
 import me.noramibu.dynamictrim.runtime.client.RuntimeTrimsClient;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import java.util.List;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import java.io.BufferedReader;
@@ -20,10 +21,32 @@ public abstract class AtlasLoaderMixin {
     )
     private static BufferedReader addGroupPermutationsToAtlasSources(BufferedReader original, ResourceManager manager, Identifier id) {
         String path = id.getPath();
-        if (!(id.getNamespace().equals("minecraft") && (path.equals("items") || path.equals("atlases/items") || path.equals("blocks") || path.equals("atlases/blocks")))) {
+        if (!id.getNamespace().equals("minecraft")) {
             return original;
         }
 
-        return RuntimeTrimsClient.getItemModelLoader().addGroupPermutationsToAtlasSources(original);
+        if (path.equals("items") || path.equals("atlases/items") || path.equals("blocks") || path.equals("atlases/blocks")) {
+            return RuntimeTrimsClient.getItemModelLoader().addGroupPermutationsToAtlasSources(
+                    original,
+                    List.of(
+                            "trims/items/helmet",
+                            "trims/items/chestplate",
+                            "trims/items/leggings",
+                            "trims/items/boots"
+                    )
+            );
+        }
+
+        if (path.equals("armor_trims") || path.equals("atlases/armor_trims")) {
+            return RuntimeTrimsClient.getItemModelLoader().addGroupPermutationsToAtlasSources(
+                    original,
+                    List.of(
+                            "trims/entity/humanoid",
+                            "trims/entity/humanoid_leggings"
+                    )
+            );
+        }
+
+        return original;
     }
 }

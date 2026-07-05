@@ -13,11 +13,6 @@ import net.minecraft.client.renderer.entity.layers.EquipmentLayerRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.EquipmentAssetManager;
-import net.minecraft.client.resources.model.EquipmentClientInfo;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.equipment.EquipmentAsset;
 import net.minecraft.world.item.equipment.trim.ArmorTrim;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -59,15 +54,26 @@ public abstract class ArmorFeatureRendererMixin {
             int outlineColour,
             ModelFeatureRenderer.CrumblingOverlay crumblingOverlay,
             Operation<Void> original,
-            @Local(argsOnly = true) EquipmentClientInfo.LayerType layerType,
-            @Local(argsOnly = true) ResourceKey<EquipmentAsset> equipmentAsset,
-            @Local(argsOnly = true) ItemStack stack,
             @Local ArmorTrim trim) {
-        RuntimeTrimsClient.getTrimRenderer().setContext(stack.getItem());
+        if (!RuntimeTrimsClient.getTrimRenderer().useLegacyRenderer(sprite)) {
+            original.call(
+                    collector,
+                    model,
+                    state,
+                    matrixStack,
+                    renderType,
+                    light,
+                    overlay,
+                    colour,
+                    sprite,
+                    outlineColour,
+                    crumblingOverlay
+            );
+            return;
+        }
+
         RuntimeTrimsClient.getTrimRenderer().submitTrim(
                 trim,
-                layerType,
-                equipmentAsset,
                 sprite,
                 model,
                 state,
@@ -75,7 +81,6 @@ public abstract class ArmorFeatureRendererMixin {
                 collector,
                 light,
                 overlay,
-                colour,
                 outlineColour,
                 dynamictrim$armorTrimAtlas,
                 crumblingOverlay
