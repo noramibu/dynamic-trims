@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 import net.minecraft.client.resources.model.AtlasManager;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.data.AtlasIds;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.Resource;
 
@@ -27,7 +27,7 @@ public abstract class BakedModelManagerMixin {
             ),
             index = 0
     )
-    private static Supplier<Map<ResourceLocation, Resource>> addDynamicTrimModels(Supplier<Map<ResourceLocation, Resource>> original) {
+    private static Supplier<Map<Identifier, Resource>> addDynamicTrimModels(Supplier<Map<Identifier, Resource>> original) {
         return () -> RuntimeTrimsClient.getItemModelLoader().loadModels(original.get());
     }
 

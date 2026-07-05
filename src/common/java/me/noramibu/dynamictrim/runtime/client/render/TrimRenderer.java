@@ -11,7 +11,7 @@ import com.google.common.collect.Lists;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -20,7 +20,7 @@ import net.minecraft.client.resources.model.EquipmentClientInfo;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -70,7 +70,7 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         }
 
         RenderContext renderContext = context;
-        ResourceLocation modelId = RuntimeTrimsClient.overrideExisting ? getOverridenId(trim, layerType, equipmentAsset) : sprite.contents().name();
+        Identifier modelId = RuntimeTrimsClient.overrideExisting ? getOverridenId(trim, layerType, equipmentAsset) : sprite.contents().name();
         colour = ARGBColourHelper.withAlpha(colour, getTrimAlpha(renderContext));
 
         if (useLegacyRenderer(sprite)) {
@@ -80,7 +80,7 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         }
     }
 
-    private <S> void submitLegacyTrim(RenderContext context, ArmorTrim trim, Model<? super S> model, S state, PoseStack matrices, OrderedSubmitNodeCollector collector, int light, int overlay, ResourceLocation modelId, TextureAtlas atlasTexture, int outlineColour, ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
+    private <S> void submitLegacyTrim(RenderContext context, ArmorTrim trim, Model<? super S> model, S state, PoseStack matrices, OrderedSubmitNodeCollector collector, int light, int overlay, Identifier modelId, TextureAtlas atlasTexture, int outlineColour, ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
         if(modelId.equals(MissingTextureAtlasSprite.getLocation())) return;
 
         RenderType renderLayer = getLegacyRenderLayer(context.trimmed(), trim);
@@ -89,9 +89,9 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         );
     }
 
-    private void forEachLegacyTrimLayer(RenderContext context, ArmorTrim trim, ResourceLocation modelId, TextureAtlas atlasTexture, LegacyTrimLayerConsumer consumer) {
+    private void forEachLegacyTrimLayer(RenderContext context, ArmorTrim trim, Identifier modelId, TextureAtlas atlasTexture, LegacyTrimLayerConsumer consumer) {
         TrimMaterial trimMaterial = trim.material().value();
-        ResourceLocation patternId = modelId.withPath(path -> "textures/%s.png".formatted(path.substring(0, path.lastIndexOf("_"))));
+        Identifier patternId = modelId.withPath(path -> "textures/%s.png".formatted(path.substring(0, path.lastIndexOf("_"))));
         int maxSupportedLayer = RuntimeTrimsClient.getLayerData().getMaxSupportedLayer(patternId);
 
         TrimPalette trimPalette = RuntimeTrimsClient.getTrimPalettes().getOrGeneratePalette(getTrimItem(trim));
@@ -99,7 +99,7 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         String assetName = getAssetName(trimMaterial);
         int alpha = getTrimAlpha(context);
         for (int i = 0; i < maxSupportedLayer; i++) {
-            ResourceLocation layerSpriteId = modelId.withPath(modelId.getPath().replace(assetName, "%d_%s".formatted(i, assetName)));
+            Identifier layerSpriteId = modelId.withPath(modelId.getPath().replace(assetName, "%d_%s".formatted(i, assetName)));
             TextureAtlasSprite layerSprite = atlasTexture.getSprite(layerSpriteId);
             int colour = ARGBColourHelper.withAlpha(paletteColours.get(i), alpha);
             consumer.accept(layerSprite, colour);
@@ -115,19 +115,19 @@ public final class TrimRenderer extends ItemAdaptable<TrimRendererAdapter> {
         return RuntimeTrimsClient.overrideExisting ? RuntimeTrims.DYNAMIC : trimMaterial.assets().base().suffix();
     }
 
-    public ResourceLocation getOverridenId(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset) {
+    public Identifier getOverridenId(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset) {
         String assetId = trim.material().value().assets().assetId(equipmentAsset).suffix();
         return getModelId(trim, layerType, equipmentAsset).withPath(path -> path.replace(assetId, RuntimeTrims.DYNAMIC));
     }
 
-    public ResourceLocation getModelId(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset) {
+    public Identifier getModelId(ArmorTrim trim, EquipmentClientInfo.LayerType layerType, ResourceKey<EquipmentAsset> equipmentAsset) {
         return trim.layerAssetId(layerType.trimAssetPrefix(), equipmentAsset);
     }
 
     private Item getTrimItem(ArmorTrim trim) {
         return trim.material()
                 .unwrapKey()
-                .flatMap(key -> BuiltInRegistries.ITEM.get(key.location()).map(Holder::value))
+                .flatMap(key -> BuiltInRegistries.ITEM.get(key.identifier()).map(Holder::value))
                 .orElse(Items.AIR);
     }
 }

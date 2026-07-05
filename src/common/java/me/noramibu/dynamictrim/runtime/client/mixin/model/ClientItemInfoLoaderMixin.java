@@ -6,7 +6,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import me.noramibu.dynamictrim.runtime.client.RuntimeTrimsClient;
 import net.minecraft.client.resources.model.ClientItemInfoLoader;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,8 +22,8 @@ public abstract class ClientItemInfoLoaderMixin {
             ),
             index = 0
     )
-    private static Supplier<Map<ResourceLocation, Resource>> addDynamicTrimItemDefinitions(
-            Supplier<Map<ResourceLocation, Resource>> original) {
+    private static Supplier<Map<Identifier, Resource>> addDynamicTrimItemDefinitions(
+            Supplier<Map<Identifier, Resource>> original) {
         return () -> RuntimeTrimsClient.getItemModelLoader().loadItemDefinitions(original.get());
     }
 }

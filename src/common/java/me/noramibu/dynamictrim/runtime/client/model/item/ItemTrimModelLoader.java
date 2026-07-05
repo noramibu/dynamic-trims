@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.equipment.Equippable;
@@ -46,9 +46,9 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
         this.jsonParser = new JsonParser();
     }
 
-    public Map<ResourceLocation, Resource> loadModels(Map<ResourceLocation, Resource> loadedModels) {
-        Map<ResourceLocation, Resource> extendedModels = new HashMap<>(loadedModels);
-        for (Map.Entry<ResourceLocation, Resource> entry : loadedModels.entrySet()) {
+    public Map<Identifier, Resource> loadModels(Map<Identifier, Resource> loadedModels) {
+        Map<Identifier, Resource> extendedModels = new HashMap<>(loadedModels);
+        for (Map.Entry<Identifier, Resource> entry : loadedModels.entrySet()) {
             TrimModelResource trimModelResource = getTrimModelResource(entry.getKey(), entry.getValue());
             if (trimModelResource == null) {
                 continue;
@@ -59,13 +59,13 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
                 continue;
             }
 
-            Map<ResourceLocation, TrimmableItemModel> patternModels = createPatternModels(
+            Map<Identifier, TrimmableItemModel> patternModels = createPatternModels(
                     trimModelResource,
                     baseModel
             );
             patternModels.forEach((modelId, model) -> {
                 Resource resource = jsonParser.toResource(trimModelResource.resource().source(), model);
-                ResourceLocation resourceId = modelId.withPrefix(MODEL_RESOURCE_PREFIX)
+                Identifier resourceId = modelId.withPrefix(MODEL_RESOURCE_PREFIX)
                         .withSuffix(MODEL_RESOURCE_SUFFIX);
                 extendedModels.put(resourceId, resource);
                 Debugger.createJson("resources/%s".formatted(resourceId), resource);
@@ -74,9 +74,9 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
         return extendedModels;
     }
 
-    public Map<ResourceLocation, Resource> loadItemDefinitions(Map<ResourceLocation, Resource> loadedDefinitions) {
-        Map<ResourceLocation, Resource> extendedDefinitions = new HashMap<>(loadedDefinitions);
-        for (Map.Entry<ResourceLocation, Resource> entry : loadedDefinitions.entrySet()) {
+    public Map<Identifier, Resource> loadItemDefinitions(Map<Identifier, Resource> loadedDefinitions) {
+        Map<Identifier, Resource> extendedDefinitions = new HashMap<>(loadedDefinitions);
+        for (Map.Entry<Identifier, Resource> entry : loadedDefinitions.entrySet()) {
             Item item = getItemFromDefinitionResource(entry.getKey());
             if (item == null || !getAdapter(item).canTrim(item)) {
                 continue;
@@ -125,18 +125,18 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
         return extendedDefinitions;
     }
 
-    public void loadModels(ResourceLocation id, Resource resource, BiConsumer<ResourceLocation, Resource> loadedModelConsumer) {
+    public void loadModels(Identifier id, Resource resource, BiConsumer<Identifier, Resource> loadedModelConsumer) {
         loadModels(Map.of(id, resource)).forEach(loadedModelConsumer);
     }
 
-    private Map<ResourceLocation, TrimmableItemModel> createPatternModels(
+    private Map<Identifier, TrimmableItemModel> createPatternModels(
             TrimModelResource trimModelResource,
             TrimmableItemModel baseModel) {
-        Map<ResourceLocation, TrimmableItemModel> patternModels = new HashMap<>();
+        Map<Identifier, TrimmableItemModel> patternModels = new HashMap<>();
         int trimStartLayer = getTrimStartLayer(baseModel.textures);
         layerData.setTrimStartLayer(trimModelResource.item(), trimStartLayer);
 
-        for (ResourceLocation patternId : DynamicTrimsTrimModelLoaderAdapter.TEMPLATE_PATTERN_INDEX_SUPPLIER.get().keySet()) {
+        for (Identifier patternId : DynamicTrimsTrimModelLoaderAdapter.TEMPLATE_PATTERN_INDEX_SUPPLIER.get().keySet()) {
             if (!DynamicTrimsTrimModelLoaderAdapter.hasItemTexture(
                     trimModelResource.equipmentType(),
                     patternId
@@ -144,7 +144,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
                 continue;
             }
 
-            ResourceLocation modelId = getPatternModelId(trimModelResource.modelId(), patternId);
+            Identifier modelId = getPatternModelId(trimModelResource.modelId(), patternId);
             TrimmableItemModel patternModel = baseModel.copy();
             patternModel.textures = TextureLayers.of(createPatternLayers(
                     baseModel.textures,
@@ -161,7 +161,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
             TextureLayers baseTextures,
             int trimStartLayer,
             TrimModelResource trimModelResource,
-            ResourceLocation patternId) {
+            Identifier patternId) {
         Map<String, String> layers = new LinkedHashMap<>();
         baseTextures.layers.entrySet().stream()
                 .filter(entry -> getLayerIndex(entry.getKey()) < trimStartLayer)
@@ -175,7 +175,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
         return layers;
     }
 
-    private List<String> getPatternLayerNames(TrimModelResource trimModelResource, ResourceLocation patternId) {
+    private List<String> getPatternLayerNames(TrimModelResource trimModelResource, Identifier patternId) {
         String textureName = DynamicTrimsTrimModelLoaderAdapter.getPatternTextureName(patternId);
         if (!trimModelResource.trimType().equals(RuntimeTrims.DYNAMIC)) {
             return List.of("minecraft:trims/items/%s/%s_%s".formatted(
@@ -185,7 +185,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
             ));
         }
 
-        ResourceLocation patternTextureId = ResourceLocation.withDefaultNamespace(
+        Identifier patternTextureId = Identifier.withDefaultNamespace(
                 "textures/trims/items/%s/%s.png".formatted(trimModelResource.equipmentType(), textureName)
         );
         int maxLayerCount = layerData.getMaxSupportedLayer(patternTextureId);
@@ -214,14 +214,14 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
             String baseModelId,
             String equipmentType) {
         JsonArray cases = new JsonArray();
-        for (ResourceLocation patternId : DynamicTrimsTrimModelLoaderAdapter.TEMPLATE_PATTERN_INDEX_SUPPLIER.get().keySet()) {
+        for (Identifier patternId : DynamicTrimsTrimModelLoaderAdapter.TEMPLATE_PATTERN_INDEX_SUPPLIER.get().keySet()) {
             if (!DynamicTrimsTrimModelLoaderAdapter.hasItemTexture(equipmentType, patternId)) {
                 continue;
             }
 
             JsonObject model = fallbackModel.deepCopy();
             model.addProperty("model", getPatternModelId(
-                    ResourceLocation.parse(baseModelId),
+                    Identifier.parse(baseModelId),
                     patternId
             ).toString());
 
@@ -243,7 +243,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
         return select;
     }
 
-    private ResourceLocation getPatternModelId(ResourceLocation baseModelId, ResourceLocation patternId) {
+    private Identifier getPatternModelId(Identifier baseModelId, Identifier patternId) {
         return baseModelId.withSuffix(
                 "-" + DynamicTrimsTrimModelLoaderAdapter.getPatternTextureName(patternId)
         );
@@ -280,27 +280,27 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
         return Integer.parseInt(layerKey.substring("layer".length()));
     }
 
-    private Item getItemFromDefinitionResource(ResourceLocation resourceId) {
+    private Item getItemFromDefinitionResource(Identifier resourceId) {
         Matcher matcher = itemDefinitionIdPattern.matcher(resourceId.getPath());
         if (!matcher.matches()) {
             return null;
         }
 
-        ResourceLocation itemId = ResourceLocation.fromNamespaceAndPath(
+        Identifier itemId = Identifier.fromNamespaceAndPath(
                 resourceId.getNamespace(),
                 matcher.group(1)
         );
         return BuiltInRegistries.ITEM.get(itemId).map(Holder::value).orElse(null);
     }
 
-    private TrimModelResource getTrimModelResource(ResourceLocation resourceId, Resource resource) {
+    private TrimModelResource getTrimModelResource(Identifier resourceId, Resource resource) {
         String path = resourceId.getPath();
         if (!path.endsWith(TRIM_MODEL_SUFFIX)) {
             return null;
         }
 
         for (Item item : BuiltInRegistries.ITEM) {
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
             if (!itemId.getNamespace().equals(resourceId.getNamespace()) || !getAdapter(item).canTrim(item)) {
                 continue;
             }
@@ -372,7 +372,7 @@ public final class ItemTrimModelLoader extends ItemAdaptable<TrimModelLoaderAdap
             Item item,
             String equipmentType,
             String trimType,
-            ResourceLocation modelId,
+            Identifier modelId,
             Resource resource) {
     }
 }

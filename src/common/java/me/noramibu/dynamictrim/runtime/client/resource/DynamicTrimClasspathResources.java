@@ -21,7 +21,7 @@ import java.util.jar.JarFile;
 import java.util.stream.Stream;
 import me.noramibu.dynamictrim.DynamicTrim;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 
 public final class DynamicTrimClasspathResources {
@@ -36,7 +36,7 @@ public final class DynamicTrimClasspathResources {
     private DynamicTrimClasspathResources() {
     }
 
-    public static Optional<Resource> getResource(ResourceLocation id) {
+    public static Optional<Resource> getResource(Identifier id) {
         String path = toClasspathPath(id);
         if (!RESOURCE_PATHS.contains(path) && getClassLoader().getResource(path) == null) {
             return Optional.empty();
@@ -44,11 +44,11 @@ public final class DynamicTrimClasspathResources {
         return Optional.of(createResource(path));
     }
 
-    public static Map<ResourceLocation, Resource> listResources(
-            String path, Predicate<ResourceLocation> filter) {
-        Map<ResourceLocation, Resource> resources = new TreeMap<>();
+    public static Map<Identifier, Resource> listResources(
+            String path, Predicate<Identifier> filter) {
+        Map<Identifier, Resource> resources = new TreeMap<>();
         for (String resourcePath : RESOURCE_PATHS) {
-            ResourceLocation id = toResourceLocation(resourcePath);
+            Identifier id = toIdentifier(resourcePath);
             if (id != null && id.getPath().startsWith(path) && filter.test(id)) {
                 resources.put(id, createResource(resourcePath));
             }
@@ -68,11 +68,11 @@ public final class DynamicTrimClasspathResources {
         return stream;
     }
 
-    private static String toClasspathPath(ResourceLocation id) {
+    private static String toClasspathPath(Identifier id) {
         return ASSETS_ROOT + id.getNamespace() + "/" + id.getPath();
     }
 
-    private static ResourceLocation toResourceLocation(String classpathPath) {
+    private static Identifier toIdentifier(String classpathPath) {
         if (!classpathPath.startsWith(ASSETS_ROOT)) {
             return null;
         }
@@ -81,7 +81,7 @@ public final class DynamicTrimClasspathResources {
         if (slash <= 0 || slash == namespacedPath.length() - 1) {
             return null;
         }
-        return ResourceLocation.fromNamespaceAndPath(
+        return Identifier.fromNamespaceAndPath(
                 namespacedPath.substring(0, slash),
                 namespacedPath.substring(slash + 1)
         );

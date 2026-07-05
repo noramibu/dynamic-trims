@@ -11,7 +11,7 @@ import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import javax.imageio.ImageIO;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.atlas.sources.PalettedPermutations;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -40,13 +40,13 @@ public abstract class PalettedPermutationsAtlasSourceMixin {
             method = "loadPaletteEntryFromImage",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/server/packs/resources/ResourceManager;getResource(Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;"
+                    target = "Lnet/minecraft/server/packs/resources/ResourceManager;getResource(Lnet/minecraft/resources/Identifier;)Ljava/util/Optional;"
             )
     )
-    private static Optional<Resource> addDynamicPaletteImage(ResourceManager instance, ResourceLocation identifier, Operation<Optional<Resource>> original) {
+    private static Optional<Resource> addDynamicPaletteImage(ResourceManager instance, Identifier identifier, Operation<Optional<Resource>> original) {
         Optional<Resource> existing = original.call(instance, identifier);
         if (existing.isPresent()) return existing;
-        if (!identifier.equals(ResourceLocation.withDefaultNamespace("textures/trims/color_palettes/%s.png".formatted(RuntimeTrims.DYNAMIC)))) return existing;
+        if (!identifier.equals(Identifier.withDefaultNamespace("textures/trims/color_palettes/%s.png".formatted(RuntimeTrims.DYNAMIC)))) return existing;
 
         PackResources defaultPack = Minecraft.getInstance().getVanillaPackResources();
         Resource dynamicResource = runtimetrims$createGradientTrimPaletteResource(defaultPack);
@@ -69,17 +69,17 @@ public abstract class PalettedPermutationsAtlasSourceMixin {
             method = "run",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/server/packs/resources/ResourceManager;getResource(Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;"
+                    target = "Lnet/minecraft/server/packs/resources/ResourceManager;getResource(Lnet/minecraft/resources/Identifier;)Ljava/util/Optional;"
             )
     )
-    private Optional<Resource> getLayeredTrimResource(ResourceManager instance, ResourceLocation layerId, Operation<Optional<Resource>> original, @Share("layerId") LocalRef<ResourceLocation> layerIdRef) {
+    private Optional<Resource> getLayeredTrimResource(ResourceManager instance, Identifier layerId, Operation<Optional<Resource>> original, @Share("layerId") LocalRef<Identifier> layerIdRef) {
         layerIdRef.set(layerId);
         Optional<Resource> originalResource = original.call(instance, layerId);
         if (originalResource.isPresent()) return originalResource;
 
         String path = layerId.getPath();
         int pathEnd = path.lastIndexOf('_');
-        ResourceLocation originalLayerId = pathEnd > 0 ? layerId.withPath(path.substring(0, pathEnd) + ".png") : layerId;
+        Identifier originalLayerId = pathEnd > 0 ? layerId.withPath(path.substring(0, pathEnd) + ".png") : layerId;
         Optional<Resource> optionalResource = instance.getResource(originalLayerId);
         if (optionalResource.isEmpty()) return optionalResource;
 
@@ -107,7 +107,7 @@ public abstract class PalettedPermutationsAtlasSourceMixin {
                     target = "Ljava/util/Map;entrySet()Ljava/util/Set;"
             )
     )
-    private Set<Map.Entry<String, Supplier<IntUnaryOperator>>> removeAllNonBlankPalettes(Set<Map.Entry<String, Supplier<IntUnaryOperator>>> permutations, @Share("layerId") LocalRef<ResourceLocation> layerIdRef) {
+    private Set<Map.Entry<String, Supplier<IntUnaryOperator>>> removeAllNonBlankPalettes(Set<Map.Entry<String, Supplier<IntUnaryOperator>>> permutations, @Share("layerId") LocalRef<Identifier> layerIdRef) {
         return RuntimeTrimsClient.getArmourModelLoader().cleanPermutations(permutations, layerIdRef.get());
     }
 }

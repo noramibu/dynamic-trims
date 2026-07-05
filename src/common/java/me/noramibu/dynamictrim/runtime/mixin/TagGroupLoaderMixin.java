@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagEntry;
 import net.minecraft.tags.TagLoader;
@@ -24,14 +24,14 @@ public abstract class TagGroupLoaderMixin {
     @Shadow @Final private String directory;
 
     @Inject(method = "build(Ljava/util/Map;)Ljava/util/Map;", at = @At("HEAD"))
-    private void addToTagEntries(Map<ResourceLocation, List<TagLoader.EntryWithSource>> tagEntries, CallbackInfoReturnable<Map<ResourceLocation, Collection<?>>> cir) {
+    private void addToTagEntries(Map<Identifier, List<TagLoader.EntryWithSource>> tagEntries, CallbackInfoReturnable<Map<Identifier, Collection<?>>> cir) {
         if (!"tags/item".equals(directory)) return;
 
         addToTag(tagEntries, ItemTags.TRIM_MATERIALS.location(), RuntimeTrims.getTrimTagInjector().getTrimMaterials());
         addToTag(tagEntries, ItemTags.TRIMMABLE_ARMOR.location(), RuntimeTrims.getTrimTagInjector().getTrimmableArmour());
     }
 
-    private void addToTag(Map<ResourceLocation, List<TagLoader.EntryWithSource>> tagEntries, ResourceLocation id, Collection<Item> items) {
+    private void addToTag(Map<Identifier, List<TagLoader.EntryWithSource>> tagEntries, Identifier id, Collection<Item> items) {
         List<TagLoader.EntryWithSource> entries = tagEntries.computeIfAbsent(id, key -> new ArrayList<>());
         entries.addAll(items.stream()
                 .map(BuiltInRegistries.ITEM::getKey)

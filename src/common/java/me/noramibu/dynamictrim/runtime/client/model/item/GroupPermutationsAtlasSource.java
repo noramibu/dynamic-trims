@@ -10,22 +10,22 @@ import java.util.Map;
 import me.noramibu.dynamictrim.runtime.RuntimeTrims;
 import net.minecraft.client.renderer.texture.atlas.SpriteSource;
 import net.minecraft.client.renderer.texture.atlas.sources.PalettedPermutations;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 public record GroupPermutationsAtlasSource(
-        List<ResourceLocation> directories,
-        ResourceLocation paletteKey,
-        Map<String, ResourceLocation> permutations)
+        List<Identifier> directories,
+        Identifier paletteKey,
+        Map<String, Identifier> permutations)
         implements SpriteSource {
     public static final MapCodec<GroupPermutationsAtlasSource> CODEC =
             RecordCodecBuilder.mapCodec(instance -> instance.group(
-                    Codec.list(ResourceLocation.CODEC)
+                    Codec.list(Identifier.CODEC)
                             .fieldOf("directories")
                             .forGetter(GroupPermutationsAtlasSource::directories),
-                    ResourceLocation.CODEC.fieldOf("palette_key")
+                    Identifier.CODEC.fieldOf("palette_key")
                             .forGetter(GroupPermutationsAtlasSource::paletteKey),
-                    Codec.unboundedMap(Codec.STRING, ResourceLocation.CODEC)
+                    Codec.unboundedMap(Codec.STRING, Identifier.CODEC)
                             .fieldOf("permutations")
                             .forGetter(GroupPermutationsAtlasSource::permutations)
             ).apply(instance, GroupPermutationsAtlasSource::new));
@@ -39,17 +39,17 @@ public record GroupPermutationsAtlasSource(
         // no-op
     }
 
-    private static Map<String, ResourceLocation> addBlankPermutation(Map<String, ResourceLocation> permutations) {
-        return ImmutableMap.<String, ResourceLocation>builder()
+    private static Map<String, Identifier> addBlankPermutation(Map<String, Identifier> permutations) {
+        return ImmutableMap.<String, Identifier>builder()
                 .putAll(permutations)
-                .put(RuntimeTrims.DYNAMIC, ResourceLocation.withDefaultNamespace("trims/color_palettes/%s".formatted(RuntimeTrims.DYNAMIC)))
+                .put(RuntimeTrims.DYNAMIC, Identifier.withDefaultNamespace("trims/color_palettes/%s".formatted(RuntimeTrims.DYNAMIC)))
                 .build();
     }
 
     @Override
     public void run(ResourceManager resourceManager, Output regions) {
-        List<ResourceLocation> combinedTextures = new ArrayList<>();
-        for (ResourceLocation dir : directories) {
+        List<Identifier> combinedTextures = new ArrayList<>();
+        for (Identifier dir : directories) {
             String textureDirectory = "textures/" + dir.getPath();
             String childTextureDirectory = textureDirectory + "/";
             resourceManager.listResources(textureDirectory, id -> {
@@ -66,7 +66,7 @@ public record GroupPermutationsAtlasSource(
                                 childTextureDirectory.length(),
                                 path.length() - ".png".length()
                         );
-                        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(
+                        Identifier id = Identifier.fromNamespaceAndPath(
                                 identifier.getNamespace(),
                                 dir.getPath() + "/" + texturePath
                         );

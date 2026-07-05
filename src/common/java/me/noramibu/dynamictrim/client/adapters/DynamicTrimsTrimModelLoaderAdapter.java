@@ -25,38 +25,38 @@ import me.noramibu.dynamictrim.runtime.client.model.item.json.TrimmableItemModel
 import me.noramibu.dynamictrim.runtime.util.Memoizer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.SmithingTemplateItem;
 import net.minecraft.world.item.equipment.trim.ArmorTrim;
 
 public class DynamicTrimsTrimModelLoaderAdapter extends DefaultTrimModelLoaderAdapter {
-    public static final Supplier<Map<ResourceLocation, Float>> TEMPLATE_PATTERN_INDEX_SUPPLIER = Memoizer.memoize(() -> {
-        Set<ResourceLocation> ids = BuiltInRegistries.ITEM.stream()
+    public static final Supplier<Map<Identifier, Float>> TEMPLATE_PATTERN_INDEX_SUPPLIER = Memoizer.memoize(() -> {
+        Set<Identifier> ids = BuiltInRegistries.ITEM.stream()
                 .filter(item -> item instanceof SmithingTemplateItem)
                 .map(DynamicTrimsTrimModelLoaderAdapter::getPatternAssetId)
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(ResourceLocation::toString))
+                .sorted(Comparator.comparing(Identifier::toString))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         if (ids.isEmpty()) {
             return Map.of();
         }
         int increment = 10000 / ids.size();
-        Map<ResourceLocation, Float> patternIndexes = new HashMap<>(ids.size());
-        for (ResourceLocation id : ids) {
+        Map<Identifier, Float> patternIndexes = new HashMap<>(ids.size());
+        for (Identifier id : ids) {
             patternIndexes.put(id, increment / 10000f);
             increment += 10000 / ids.size();
         }
         return patternIndexes;
     });
 
-    private ResourceLocation generatingModelId;
+    private Identifier generatingModelId;
 
     public static float getPatternIndex(ArmorTrim trim) {
-        ResourceLocation patternId = trim.pattern()
+        Identifier patternId = trim.pattern()
                 .unwrapKey()
-                .map(ResourceKey::location)
+                .map(ResourceKey::identifier)
                 .orElse(null);
         if (patternId == null) {
             return Float.NEGATIVE_INFINITY;
@@ -70,7 +70,7 @@ public class DynamicTrimsTrimModelLoaderAdapter extends DefaultTrimModelLoaderAd
         if(info == null) return super.getLayerCount(item);
         if (!info.isDynamic()) return 1;
 
-        ResourceLocation patternTextureId = info.getPatternTextureId(getEquipmentType(item));
+        Identifier patternTextureId = info.getPatternTextureId(getEquipmentType(item));
         int maxLayerCount = RuntimeTrimsClient.getLayerData().getMaxSupportedLayer(patternTextureId);
         if(maxLayerCount == 0) return super.getLayerCount(item);
 
@@ -89,7 +89,7 @@ public class DynamicTrimsTrimModelLoaderAdapter extends DefaultTrimModelLoaderAd
             );
         }
 
-        ResourceLocation patternTextureId = info.getPatternTextureId(getEquipmentType(item));
+        Identifier patternTextureId = info.getPatternTextureId(getEquipmentType(item));
         if(RuntimeTrimsClient.getLayerData().getMaxSupportedLayer(patternTextureId) == 0) {
             return super.getLayerName(item, layerIndex);
         }
@@ -103,20 +103,20 @@ public class DynamicTrimsTrimModelLoaderAdapter extends DefaultTrimModelLoaderAd
     }
 
     @Override
-    public Map<ResourceLocation, TrimmableItemModel> supplyOverrides(JsonParser jsonParser, TrimmableItemModel itemModel, TrimmableResource resource, BiFunction<TrimmableItemModel, TrimmableResource, TrimmableItemModel> overrideCreator) {
-        Map<ResourceLocation, TrimmableItemModel> overrides = new HashMap<>();
+    public Map<Identifier, TrimmableItemModel> supplyOverrides(JsonParser jsonParser, TrimmableItemModel itemModel, TrimmableResource resource, BiFunction<TrimmableItemModel, TrimmableResource, TrimmableItemModel> overrideCreator) {
+        Map<Identifier, TrimmableItemModel> overrides = new HashMap<>();
         List<ModelOverride> baseOverrides = List.copyOf(itemModel.overrides);
         TrimmableItemModel base = itemModel.copy();
         String equipmentType = getEquipmentType(resource.item());
 
         baseOverrides.forEach(modelOverride -> {
-            for (Map.Entry<ResourceLocation, Float> pattern : TEMPLATE_PATTERN_INDEX_SUPPLIER.get().entrySet()) {
-                ResourceLocation id = pattern.getKey();
+            for (Map.Entry<Identifier, Float> pattern : TEMPLATE_PATTERN_INDEX_SUPPLIER.get().entrySet()) {
+                Identifier id = pattern.getKey();
                 if (!hasItemTexture(equipmentType, id)) {
                     continue;
                 }
 
-                ResourceLocation modelId = getPatternModelId(modelOverride.model, id);
+                Identifier modelId = getPatternModelId(modelOverride.model, id);
                 ModelOverride override = ModelOverride.builder()
                         .withPredicate(withPatternPredicate(modelOverride.predicate, pattern.getValue()))
                         .withModel(modelId.toString())
@@ -135,7 +135,7 @@ public class DynamicTrimsTrimModelLoaderAdapter extends DefaultTrimModelLoaderAd
         return overrides;
     }
 
-    public static boolean hasItemTexture(String equipmentType, ResourceLocation patternId) {
+    public static boolean hasItemTexture(String equipmentType, Identifier patternId) {
         String path = "assets/minecraft/textures/trims/items/%s/%s.png".formatted(
                 equipmentType,
                 getPatternTextureName(patternId)
@@ -143,22 +143,22 @@ public class DynamicTrimsTrimModelLoaderAdapter extends DefaultTrimModelLoaderAd
         return DynamicTrimsTrimModelLoaderAdapter.class.getClassLoader().getResource(path) != null;
     }
 
-    private static ResourceLocation getPatternModelId(String baseModelId, ResourceLocation patternId) {
-        return ResourceLocation.parse("%s-%s".formatted(baseModelId, getPatternTextureName(patternId)));
+    private static Identifier getPatternModelId(String baseModelId, Identifier patternId) {
+        return Identifier.parse("%s-%s".formatted(baseModelId, getPatternTextureName(patternId)));
     }
 
-    public static String getPatternTextureName(ResourceLocation patternId) {
+    public static String getPatternTextureName(Identifier patternId) {
         return patternId.toString().replace(":", "-");
     }
 
-    private static ResourceLocation getPatternAssetId(Item item) {
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+    private static Identifier getPatternAssetId(Item item) {
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
         String itemPath = itemId.getPath();
         String trimTemplateSuffix = "_armor_trim_smithing_template";
         if (!itemPath.endsWith(trimTemplateSuffix)) {
             return null;
         }
-        return ResourceLocation.fromNamespaceAndPath(
+        return Identifier.fromNamespaceAndPath(
                 itemId.getNamespace(),
                 itemPath.substring(0, itemPath.length() - trimTemplateSuffix.length()));
     }
@@ -172,7 +172,7 @@ public class DynamicTrimsTrimModelLoaderAdapter extends DefaultTrimModelLoaderAd
     private record TrimInfo(String trimType, String trimPattern) {
         private static final Function<String, Pattern> TRIM_INFO_PATTERN_FUNCTION = Memoizer.memoize(itemId -> Pattern.compile("[^:]+:item/" + itemId + "_(?<trimType>.+)(?=_trim)_trim-(?<trimPattern>.*)"));
 
-        public static TrimInfo fromModelId(Item item, ResourceLocation modelId) {
+        public static TrimInfo fromModelId(Item item, Identifier modelId) {
             if (modelId == null) return null;
 
             Pattern pattern = TRIM_INFO_PATTERN_FUNCTION.apply(BuiltInRegistries.ITEM.getKey(item).getPath());
@@ -190,8 +190,8 @@ public class DynamicTrimsTrimModelLoaderAdapter extends DefaultTrimModelLoaderAd
             return trimType.equals(RuntimeTrims.DYNAMIC);
         }
 
-        public ResourceLocation getPatternTextureId(String equipmentType) {
-            return ResourceLocation.withDefaultNamespace("textures/trims/items/%s/%s.png".formatted(equipmentType, trimPattern));
+        public Identifier getPatternTextureId(String equipmentType) {
+            return Identifier.withDefaultNamespace("textures/trims/items/%s/%s.png".formatted(equipmentType, trimPattern));
         }
     }
 }

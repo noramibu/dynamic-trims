@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public final class TrimmableItemModel {
     public String parent;
@@ -58,7 +58,7 @@ public final class TrimmableItemModel {
             return this;
         }
 
-        public Builder parent(ResourceLocation identifier) {
+        public Builder parent(Identifier identifier) {
             return parent(identifier.toString());
         }
 

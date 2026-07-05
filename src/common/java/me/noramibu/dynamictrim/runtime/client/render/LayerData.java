@@ -2,14 +2,14 @@ package me.noramibu.dynamictrim.runtime.client.render;
 
 import java.util.HashMap;
 import java.util.Map;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 
 public final class LayerData {
-    private final Map<ResourceLocation, Integer> maxSupportedLayers = new HashMap<>();
+    private final Map<Identifier, Integer> maxSupportedLayers = new HashMap<>();
     private final Map<Item, Integer> trimStartLayers = new HashMap<>();
 
-    public void setMaxSupportedLayer(ResourceLocation trimPattern, int layer) {
+    public void setMaxSupportedLayer(Identifier trimPattern, int layer) {
         int existingLayer = maxSupportedLayers.getOrDefault(trimPattern, -1);
         if (layer > existingLayer) {
             maxSupportedLayers.put(trimPattern, layer);
@@ -20,7 +20,7 @@ public final class LayerData {
         trimStartLayers.put(item, layer);
     }
 
-    public int getMaxSupportedLayer(ResourceLocation trimPattern) {
+    public int getMaxSupportedLayer(Identifier trimPattern) {
         return maxSupportedLayers.getOrDefault(trimPattern, -1) + 1;
     }
 

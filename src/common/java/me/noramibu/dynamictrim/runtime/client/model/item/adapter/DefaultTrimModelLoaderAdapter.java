@@ -7,7 +7,7 @@ import me.noramibu.dynamictrim.runtime.client.model.item.json.TrimmableItemModel
 import java.util.Map;
 import java.util.function.BiFunction;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.equipment.Equippable;
@@ -36,7 +36,7 @@ public class DefaultTrimModelLoaderAdapter extends TrimModelLoaderAdapter {
     }
 
     @Override
-    public Map<ResourceLocation, TrimmableItemModel> supplyOverrides(JsonParser jsonParser, TrimmableItemModel itemModel, TrimmableResource resource, BiFunction<TrimmableItemModel, TrimmableResource, TrimmableItemModel> overrideCreator) {
+    public Map<Identifier, TrimmableItemModel> supplyOverrides(JsonParser jsonParser, TrimmableItemModel itemModel, TrimmableResource resource, BiFunction<TrimmableItemModel, TrimmableResource, TrimmableItemModel> overrideCreator) {
         return Map.of();
     }
 

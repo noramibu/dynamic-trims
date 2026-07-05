@@ -6,7 +6,7 @@ import me.noramibu.dynamictrim.runtime.client.debug.Debugger;
 import me.noramibu.dynamictrim.runtime.client.render.LayerData;
 import it.unimi.dsi.fastutil.Pair;
 import javax.imageio.ImageIO;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.resources.Resource;
 import org.spongepowered.asm.mixin.Unique;
@@ -22,13 +22,13 @@ import java.util.function.Supplier;
 public final class ArmourTrimModelLoader {
     private final LayerData layerData;
     private final Map<String, List<Integer>> trimTemplateColours = Collections.synchronizedMap(new HashMap<>());
-    private final List<ResourceLocation> skippedLayers = new ArrayList<>();
+    private final List<Identifier> skippedLayers = new ArrayList<>();
 
     public ArmourTrimModelLoader(LayerData layerData) {
         this.layerData = layerData;
     }
     
-    public Optional<Resource> loadLayeredResource(ResourceLocation identifier, BufferedImage bufferedImage, ResourceLocation originalIdentifier, int layer, PackResources resourcePack) {
+    public Optional<Resource> loadLayeredResource(Identifier identifier, BufferedImage bufferedImage, Identifier originalIdentifier, int layer, PackResources resourcePack) {
         int layerColour = getLayerColour(bufferedImage, originalIdentifier.getPath(), layer);
         Pair<BufferedImage, Boolean> newImage;
         if(originalIdentifier.getPath().startsWith("textures/trims/items")) {
@@ -48,7 +48,7 @@ public final class ArmourTrimModelLoader {
         return Optional.of(new Resource(resourcePack, () -> asInputStream(newImage.left())));
     }
 
-    public Set<Map.Entry<String, Supplier<IntUnaryOperator>>> cleanPermutations(Set<Map.Entry<String, Supplier<IntUnaryOperator>>> permutations, ResourceLocation textureId) {
+    public Set<Map.Entry<String, Supplier<IntUnaryOperator>>> cleanPermutations(Set<Map.Entry<String, Supplier<IntUnaryOperator>>> permutations, Identifier textureId) {
         if(skippedLayers.contains(textureId)) return Collections.emptySet();
 
         String path = textureId.getPath();

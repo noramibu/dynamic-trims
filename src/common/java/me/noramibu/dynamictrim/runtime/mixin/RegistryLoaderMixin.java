@@ -13,7 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.RegistryDataLoader;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.repository.KnownPack;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.Item;
@@ -62,10 +62,10 @@ public abstract class RegistryLoaderMixin {
                     Lifecycle.stable()
             );
 
-            Map<ResourceLocation, Holder<Item>> newMaterials = RuntimeTrims.getTrimMaterialRegistryInjector().getNewMaterials(trimMaterialRegistry);
+            Map<Identifier, Holder<Item>> newMaterials = RuntimeTrims.getTrimMaterialRegistryInjector().getNewMaterials(trimMaterialRegistry);
 
 
-            for (Map.Entry<ResourceLocation, Holder<Item>> newMaterial : newMaterials.entrySet()) {
+            for (Map.Entry<Identifier, Holder<Item>> newMaterial : newMaterials.entrySet()) {
                 ResourceKey<TrimMaterial> trimRegKey = ResourceKey.create(trimMaterialRegistry.key(), newMaterial.getKey());
                 TrimMaterial itemMaterial = new TrimMaterial(
                         MaterialAssetGroup.create(RuntimeTrims.DYNAMIC),
@@ -74,7 +74,9 @@ public abstract class RegistryLoaderMixin {
                 trimMaterialRegistry.register(trimRegKey, itemMaterial, info);
             }
 
-            RuntimeTrims.LOGGER.info("Added {} new trim materials!", newMaterials.size());
+            if (!newMaterials.isEmpty()) {
+                RuntimeTrims.LOGGER.info("Added {} new trim materials!", newMaterials.size());
+            }
         }
     }
 }
