@@ -46,11 +46,17 @@ public abstract class PalettedPermutationsAtlasSourceMixin {
     private static Optional<Resource> addDynamicPaletteImage(ResourceManager instance, Identifier identifier, Operation<Optional<Resource>> original) {
         Optional<Resource> existing = original.call(instance, identifier);
         if (existing.isPresent()) return existing;
-        if (!identifier.equals(Identifier.withDefaultNamespace("textures/trims/color_palettes/%s.png".formatted(DynamicTrim.DYNAMIC)))) return existing;
+        if (!isDynamicPalette(identifier)) return existing;
 
-        PackResources defaultPack = Minecraft.getInstance().getVanillaPackResources();
+        PackResources defaultPack = Minecraft.getInstance().getVanillaPackResources().fullResources();
         Resource dynamicResource = runtimetrims$createGradientTrimPaletteResource(defaultPack);
         return Optional.of(dynamicResource);
+    }
+
+    @Unique
+    private static boolean isDynamicPalette(Identifier identifier) {
+        return identifier.equals(Identifier.withDefaultNamespace("textures/trims/color_palettes/%s.png".formatted(DynamicTrim.DYNAMIC)))
+                || identifier.equals(Identifier.withDefaultNamespace("textures/trim/%s.png".formatted(DynamicTrim.DYNAMIC)));
     }
 
     @Unique

@@ -13,7 +13,6 @@
     "model.ClientItemInfoLoaderMixin",
     "model.ItemModelGeneratorMixin",
     "model.PalettedPermutationsAtlasSourceMixin",
-    "render.ArmorFeatureRendererMixin",
     "resource.MultiPackResourceManagerMixin"
   ]
 }

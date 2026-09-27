@@ -1,13 +1,11 @@
 package me.noramibu.dynamictrim.runtime.client.model.item;
 
-import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import me.noramibu.dynamictrim.DynamicTrim;
 import net.minecraft.client.renderer.texture.atlas.SpriteSource;
 import net.minecraft.client.renderer.texture.atlas.sources.PalettedPermutations;
 import net.minecraft.resources.Identifier;
@@ -32,14 +30,7 @@ public record GroupPermutationsAtlasSource(
 
     public GroupPermutationsAtlasSource {
         directories = List.copyOf(directories);
-        permutations = addBlankPermutation(permutations);
-    }
-
-    private static Map<String, Identifier> addBlankPermutation(Map<String, Identifier> permutations) {
-        return ImmutableMap.<String, Identifier>builder()
-                .putAll(permutations)
-                .put(DynamicTrim.DYNAMIC, Identifier.withDefaultNamespace("trims/color_palettes/%s".formatted(DynamicTrim.DYNAMIC)))
-                .build();
+        permutations = Map.copyOf(permutations);
     }
 
     @Override

@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
@@ -23,6 +22,7 @@ import me.noramibu.dynamictrim.DynamicTrim;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 public final class DynamicTrimClasspathResources {
     private static final String ASSETS_ROOT = "assets/";
@@ -45,11 +45,11 @@ public final class DynamicTrimClasspathResources {
     }
 
     public static Map<Identifier, Resource> listResources(
-            String path, Predicate<Identifier> filter) {
+            String path, ResourceManager.Selector filter) {
         Map<Identifier, Resource> resources = new TreeMap<>();
         for (String resourcePath : RESOURCE_PATHS) {
             Identifier id = toIdentifier(resourcePath);
-            if (id != null && id.getPath().startsWith(path) && filter.test(id)) {
+            if (id != null && id.getPath().startsWith(path) && filter.isIncluded(id)) {
                 resources.put(id, createResource(resourcePath));
             }
         }
@@ -57,7 +57,7 @@ public final class DynamicTrimClasspathResources {
     }
 
     private static Resource createResource(String path) {
-        return new Resource(Minecraft.getInstance().getVanillaPackResources(), () -> openResource(path));
+        return new Resource(Minecraft.getInstance().getVanillaPackResources().fullResources(), () -> openResource(path));
     }
 
     private static InputStream openResource(String path) throws IOException {

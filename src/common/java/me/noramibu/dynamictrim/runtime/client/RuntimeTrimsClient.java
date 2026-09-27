@@ -4,12 +4,10 @@ import me.noramibu.dynamictrim.runtime.client.model.armour.ArmourTrimModelLoader
 import me.noramibu.dynamictrim.runtime.client.model.item.ItemTrimModelLoader;
 import me.noramibu.dynamictrim.runtime.client.palette.TrimPalettes;
 import me.noramibu.dynamictrim.runtime.client.render.LayerData;
-import me.noramibu.dynamictrim.runtime.client.render.TrimRenderer;
 
 public final class RuntimeTrimsClient {
     private static final LayerData layerData = new LayerData();
     private static final TrimPalettes trimPalettes = new TrimPalettes();
-    private static final TrimRenderer trimRenderer = new TrimRenderer();
     private static final ItemTrimModelLoader itemModelLoader = new ItemTrimModelLoader(layerData);
     private static final ArmourTrimModelLoader armourModelLoader = new ArmourTrimModelLoader(layerData);
 
@@ -17,10 +15,6 @@ public final class RuntimeTrimsClient {
 
     public static TrimPalettes getTrimPalettes() {
         return trimPalettes;
-    }
-
-    public static TrimRenderer getTrimRenderer() {
-        return trimRenderer;
     }
 
     /**

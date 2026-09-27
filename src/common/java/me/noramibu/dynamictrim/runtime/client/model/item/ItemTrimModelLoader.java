@@ -526,7 +526,8 @@ public final class ItemTrimModelLoader {
     public BufferedReader addGroupPermutationsToAtlasSources(BufferedReader original, List<String> directories) {
         JsonObject atlasJson = jsonParser.fromReader(original, JsonObject.class);
         BlockAtlas atlas = jsonParser.fromJson(atlasJson, BlockAtlas.class);
-        Optional<BlockAtlas.Source> palettedPermuationsSource = atlas.getPalettedPermutationsSource("trims/color_palettes/trim_palette");
+        Optional<BlockAtlas.Source> palettedPermuationsSource = atlas.getPalettedPermutationsSource("trims/color_palettes/trim_palette")
+                .or(() -> atlas.getPalettedPermutationsSource("trim_base"));
         if (palettedPermuationsSource.isEmpty()) {
             return jsonParser.toReader(atlasJson);
         }

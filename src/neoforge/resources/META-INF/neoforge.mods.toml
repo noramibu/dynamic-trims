@@ -12,7 +12,7 @@ issueTrackerURL = "https://github.com/noramibu/dynamic-trims/issues"
 description = '''
 ${description}
 '''
-logoFile = "assets/dynamictrim/icon.png"
+iconFile = "assets/dynamictrim/icon.png"
 
 [modproperties.dynamictrim]
 discord = "https://discord.gg/FaxbR9eEFW"
